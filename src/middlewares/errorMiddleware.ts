@@ -3,7 +3,6 @@ import type { Request,Response,NextFunction } from "express";
 import ApiError from "../utils/ApiError.js";
 
 
-
 export const errorHandler=(err:unknown,req:Request,res:Response,next:NextFunction)=>{
 
     if(err instanceof Prisma.PrismaClientKnownRequestError){
@@ -15,6 +14,15 @@ export const errorHandler=(err:unknown,req:Request,res:Response,next:NextFunctio
             });
 
         return;
+        }
+
+        if (err.code === "P2003") {
+            res.status(409).json({
+                success: false,
+                message: "Referenced resource does not exist",
+                errors: []
+            });
+            return;
         }
     }
 
