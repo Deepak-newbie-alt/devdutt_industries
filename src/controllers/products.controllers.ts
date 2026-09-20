@@ -4,8 +4,10 @@ import { catchAsync } from "../utils/catchAsync.js";
 import { Prisma } from "../generated/prisma/client.js";
 
 //types
-import type { TcreateProductBody,TgetProductQuery } from "../schemas/productSchema.js";
+import type { TcreateProductBody,TgetProductQuery,TgetProductByIdParams } from "../schemas/productSchema.js";
 import type { ValidatedRequest } from "../types/VatidatedRequest.js";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
 
 export const createProduct=catchAsync<ValidatedRequest<TcreateProductBody>>(async(req,res:Response)=>{
     
@@ -23,7 +25,9 @@ export const createProduct=catchAsync<ValidatedRequest<TcreateProductBody>>(asyn
         }
     })
 
-    res.status(201).json(product);
+    res.status(201).json(
+        new ApiResponse(201,"Product created successfully",product)
+    )
     return;
 })
 
@@ -92,7 +96,37 @@ export const getProducts=catchAsync<ValidatedRequest<TgetProductQuery>>(async(re
         products,
         meta
     }
-    
-    res.status(200).json(data);
+
+    res.status(200).json(
+        new ApiResponse(200,"Product fetched successfully",data)
+    )
+    return;
+})
+
+export const getProductById=catchAsync<ValidatedRequest<TgetProductByIdParams>>(async(req,res:Response)=>{
+    const {productId}=req.validated.params;
+
+    const product=await prisma.product.findUnique({
+        where:{
+            id:productId
+        },
+        include:{
+            category:{
+                select:{
+                    id:true,
+                    name:true,
+                    slug:true
+                }
+            }
+        }
+    })
+
+    if(!product){
+        throw new ApiError(404,"Product not found");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200,"Product by id fetched successfully",product)
+    )
     return;
 })

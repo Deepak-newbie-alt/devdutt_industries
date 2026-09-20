@@ -107,3 +107,15 @@ export const getProductsQuerySchema=z.object({
 })
 
 export type TgetProductQuery=z.infer<typeof getProductsQuerySchema>;
+
+export const getProductByIdParamsSchema=z.object({
+    params:z.object({
+        productId:z
+        .coerce
+        .number()
+        .int("Product Id must be an integer")
+        .positive("Product Id must be positive")
+    })
+})
+
+export type TgetProductByIdParams=z.infer<typeof getProductByIdParamsSchema>;
