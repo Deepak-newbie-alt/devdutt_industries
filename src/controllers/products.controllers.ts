@@ -1,21 +1,25 @@
 import prisma from "../lib/prisma.js";
-import {type Request,type Response } from "express";
+import type { Response } from "express";
 import { catchAsync } from "../utils/catchAsync.js";
 import { Prisma } from "../generated/prisma/client.js";
 
-export const createProduct=catchAsync(async(req:Request,res:Response)=>{
+//types
+import type { TcreateProductBody,TgetProductQuery } from "../schemas/productSchema.js";
+import type { ValidatedRequest } from "../types/VatidatedRequest.js";
+
+export const createProduct=catchAsync<ValidatedRequest<TcreateProductBody>>(async(req,res:Response)=>{
     
     const product=await prisma.product.create({
         data:{
-            name:req.body.name,
-            slug:req.body.slug,
-            description:req.body.description,
-            price:req.body.price,
-            unit:req.body.unit,
-            minimumOrderQuantity:req.body.minimumOrderQuantity,
-            specifications:req.body.specifications,
-            status:req.body.status,
-            categoryId:req.body.categoryId
+            name:req.validated.body.name,
+            slug:req.validated.body.slug,
+            description:req.validated.body.description,
+            price:req.validated.body.price,
+            unit:req.validated.body.unit,
+            minimumOrderQuantity:req.validated.body.minimumOrderQuantity,
+            specifications:req.validated.body.specifications,
+            status:req.validated.body.status,
+            categoryId:req.validated.body.categoryId
         }
     })
 
@@ -23,11 +27,11 @@ export const createProduct=catchAsync(async(req:Request,res:Response)=>{
     return;
 })
 
-export const getProducts=catchAsync(async(req:Request,res:Response)=>{
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+export const getProducts=catchAsync<ValidatedRequest<TgetProductQuery>>(async(req,res:Response)=>{
+    const page = Number(req.validated.query.page) || 1;
+    const limit = Number(req.validated.query.limit) || 10;
 
-    const {categoryId,search,maxPrice,minPrice}=req.query;
+    const {categoryId,search,maxPrice,minPrice}=req.validated.query;
 
     const where:Prisma.ProductWhereInput={
         status:"ACTIVE"

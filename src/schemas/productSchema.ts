@@ -39,7 +39,7 @@ export const createProductSchema=z.object({
         .positive("Minimum order quantity must be positive")
         .default(1),
         specifications:z
-        .record(z.string(),z.unknown())
+        .record(z.string(),z.json())
         .default({}),
         status:z
         .enum(["ACTIVE","INACTIVE","ARCHIVED"])
@@ -51,6 +51,8 @@ export const createProductSchema=z.object({
         .positive("Category Id must be positive")
     })
 })
+
+export type TcreateProductBody=z.infer<typeof createProductSchema>;
 
 export const getProductsQuerySchema=z.object({
     query:z.object({
@@ -82,13 +84,11 @@ export const getProductsQuerySchema=z.object({
         minPrice:z
         .coerce
         .number()
-        .int("Min Priice must be an integer")
         .positive("Minimum price must be positive")
         .optional(),
         maxPrice:z
         .coerce
         .number()
-        .int("Max Price must be an integer")
         .positive("Max price must be positive")
         .optional()
     }).refine(
@@ -105,3 +105,5 @@ export const getProductsQuerySchema=z.object({
         }
     )
 })
+
+export type TgetProductQuery=z.infer<typeof getProductsQuerySchema>;
