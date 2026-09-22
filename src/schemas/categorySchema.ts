@@ -34,3 +34,46 @@ export const createCategorySchema=z.object({
 })
 
 export type TcreateCategoryInput=z.infer<typeof createCategorySchema>;
+
+export const getCategoryQuerySchema=z.object({
+    query:z.object({
+        page:z
+        .coerce
+        .number()
+        .int("Page number should be an integer")
+        .positive("Page number should be positive")
+        .default(1),
+        limit:z
+        .coerce
+        .number()
+        .max(100,"Limit is too high")
+        .int("Limit should be an integer")
+        .positive("Limit should be positive")
+        .default(10),
+        id:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+        .optional(),
+        search:z
+        .string()
+        .trim()
+        .max(200,"Name is too long")
+        .optional()
+    })
+})
+
+export type TgetCategoryQuery=z.infer<typeof getCategoryQuerySchema>;
+
+export const getCategoryByIdParams=z.object({
+    params:z.object({
+        categoryId:z
+        .coerce
+        .number()
+        .int("Category id must be integer")
+        .positive("Category id must be positive")
+    })
+})
+
+export type TgetCategoryByIdParams=z.infer<typeof getCategoryByIdParams>;

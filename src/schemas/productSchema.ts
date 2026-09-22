@@ -61,16 +61,14 @@ export const getProductsQuerySchema=z.object({
         .number()
         .int("Page must be integer")
         .positive("Page must be positive")
-        .default(1)
-        .optional(),
+        .default(1),
         limit:z
         .coerce
         .number()
         .int("Limit must be an integer")
         .positive("Limit must be positive")
         .max(100,"Limit is too high")
-        .default(10)
-        .optional(),
+        .default(10),
         categoryId:z
         .coerce
         .number()
@@ -79,6 +77,7 @@ export const getProductsQuerySchema=z.object({
         .optional(),
         search:z
         .string()
+        .trim()
         .max(200,"Searched name is too long")
         .optional(),
         minPrice:z

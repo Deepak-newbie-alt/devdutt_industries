@@ -1,46 +1,43 @@
-import prisma from "../lib/prisma.js";
-import { type Request,type Response } from "express";
+import { type Response } from "express";
 import { catchAsync } from "../utils/catchAsync.js";
 import ApiResponse from "../utils/ApiResponse.js";
 
 //types
 import type { ValidatedRequest } from "../types/VatidatedRequest.js";
-import type { TcreateCategoryInput } from "../schemas/categorySchema.js";
+import type { TcreateCategoryInput, TgetCategoryByIdParams, TgetCategoryQuery } from "../schemas/categorySchema.js";
+import { categoryService } from "../services/category.services.js";
+import ApiError from "../utils/ApiError.js";
 
 export const createCategory=catchAsync<ValidatedRequest<TcreateCategoryInput>>(async(req,res:Response)=>{
 
-    const category=await prisma.category.create({
-        data:{
-            name:req.validated.body.name,
-            slug:req.validated.body.slug,
-            description:req.validated.body.description ?? null,
-            displayOrder:req.validated.body.displayOrder,
-            status:req.validated.body.status
-        }
-    })
+    const data=await categoryService.createCategory(req.validated.body);
 
     res.status(201).json(
-        new ApiResponse(201,"Category created successfully",category)
+        new ApiResponse(201,"Category created successfully",data)
     );
     return;
 })
 
-export const getCategories=catchAsync(async(req:Request,res:Response)=>{
-    const category=await prisma.category.findMany({
-        include:{
-            products:{
-                select:{
-                    id:true,
-                    name:true,
-                    price:true,
-                    unit:true
-                }
-            }
-        }
-    });
+export const getCategories=catchAsync<ValidatedRequest<TgetCategoryQuery>>(async(req,res:Response)=>{
+    
+    const data=await categoryService.getCategories(req.validated.query);
 
     res.status(200).json(
-        new ApiResponse(200,"category fetched successfully",category)
+        new ApiResponse(200,"Category fetched successfully",data)
     );
+    return;
+})
+
+export const getCategoryById=catchAsync<ValidatedRequest<TgetCategoryByIdParams>>(async(req,res:Response)=>{
+
+    const data=await categoryService.getCategoryById(req.validated.params);
+
+    if(!data){
+        throw new ApiError(404,"Category not found");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200,"Category by id fetched successfully",data)
+    )
     return;
 })
