@@ -2,7 +2,7 @@ import prisma from "../lib/prisma.js";
 import { Prisma } from "../generated/prisma/client.js";
 
 //types
-import type { TgetProductQuery,TgetProductByIdParams, TcreateProductBody } from "../schemas/productSchema.js";
+import type { TgetProductQuery,TgetProductByIdParams, TcreateProductBody, TupdateProductById } from "../schemas/productSchema.js";
 
 
 export const productService={
@@ -65,6 +65,12 @@ export const productService={
                     name: true,
                     slug: true
                 }
+            },
+            images:{
+                select:{
+                    id:true,
+                    image_url:true
+                }
             }
         }
     };
@@ -110,5 +116,45 @@ export const productService={
     })
 
     return product;
+    },
+
+    updateProduct:async(params:TupdateProductById["params"],body:TupdateProductById["body"])=>{
+        const {productId}=params;
+
+        const {name,slug,description,price,unit,minimumOrderQuantity,specifications,status,categoryId}=body;
+
+        const prismaQuery:Prisma.ProductUpdateArgs={
+            where:{
+                id:productId,
+            },
+            data:{
+                ...(name !== undefined ? {name} : {}),
+                ...(slug !== undefined ? {slug} : {}),
+                ...(description !== undefined ? {description} : {}),
+                ...(price !== undefined ? {price} : {}),
+                ...(unit !== undefined ? {unit} : {}),
+                ...(minimumOrderQuantity !== undefined ? {minimumOrderQuantity} : {}),
+                ...(specifications !== undefined ? {specifications} : {}),
+                ...(status !== undefined ? {status} : {}),
+                ...(categoryId !== undefined && {
+                    category:{
+                        connect:{
+                            id:categoryId
+                        }
+                    }})
+            },
+            include:{
+                category:{
+                    select:{
+                        id:true,
+                        name:true,
+                        slug:true
+                    }
+                }
+            }
+        }
+        const product=await prisma.product.update(prismaQuery);
+
+        return product;
     }
 }

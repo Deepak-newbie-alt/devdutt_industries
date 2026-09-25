@@ -77,3 +77,21 @@ export const getCategoryByIdParams=z.object({
 })
 
 export type TgetCategoryByIdParams=z.infer<typeof getCategoryByIdParams>;
+
+export const updateCategorySchema=z.object({
+    params:z.object({
+        categoryId:z
+        .coerce
+        .number()
+        .int("Category id must be integer")
+        .positive('Category id must be positive')
+    }),
+
+    body:createCategorySchema.shape.body.partial()
+    .refine(
+        (data)=>Object.keys(data).length>0,
+        {message:"Atleast one field must be provided to update category"}
+    )
+})
+
+export type TupdateCategory=z.infer<typeof updateCategorySchema>;

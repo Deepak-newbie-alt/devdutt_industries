@@ -41,13 +41,13 @@ enum Unit {
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  name String
-  email String @unique @db.VarChar(255)
-  phone String @unique @db.VarChar(20)
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique @db.VarChar(255)
+  phone        String     @unique @db.VarChar(20)
   passwordHash String
-  role UserRole
-  status UserStatus @default(ACTIVE)
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -56,34 +56,74 @@ model User {
 }
 
 model Category {
-  id Int @id @default(autoincrement())
-  name String @db.VarChar(100)
-  slug String @unique @db.VarChar(120)
-  description String? @db.VarChar(500)
-  displayOrder Int @default(0)
-  status CategoryStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int            @id @default(autoincrement())
+  name         String         @db.VarChar(100)
+  slug         String         @unique @db.VarChar(120)
+  description  String?        @db.VarChar(500)
+  displayOrder Int            @default(0)
+  status       CategoryStatus @default(ACTIVE)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  products     Product[]
 
   @@map("categories")
-  products Product[]
 }
 
 model Product {
-  id Int @id @default(autoincrement())
-  name String @db.VarChar(200)
-  slug String @unique @db.VarChar(220)
-  description String @db.VarChar(1000)
-  price Decimal @db.Decimal(12,2)
-  unit Unit
-  minimumOrderQuantity Int @default(1)
-  specifications Json @default("{}")
-  status ProductStatus @default(ACTIVE)
-  categoryId Int
-  category Category @relation(fields: [categoryId],references: [id])
+  id                   Int              @id @default(autoincrement())
+  name                 String           @db.VarChar(200)
+  slug                 String           @unique @db.VarChar(220)
+  description          String           @db.VarChar(1000)
+  price                Decimal          @db.Decimal(12, 2)
+  unit                 Unit
+  minimumOrderQuantity Int              @default(1)
+  specifications       Json             @default("{}")
+  status               ProductStatus    @default(ACTIVE)
+  categoryId           Int
+  category             Category         @relation(fields: [categoryId], references: [id])
+  images               ProductImage[]
+  videos               ProductVideo[]
+  brochure             ProductBrochure?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("products")
+}
+
+model ProductImage {
+  id            Int      @id @default(autoincrement())
+  productId     Int
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  image_url     String
+  display_order Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("productimages")
+}
+
+model ProductVideo {
+  id            Int      @id @default(autoincrement())
+  productId     Int
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  youtube_url   String
+  title         String   @db.VarChar(200)
+  display_order Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("productvideos")
+}
+
+model ProductBrochure {
+  id        Int      @id @default(autoincrement())
+  productId Int      @unique
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  file_url  String
+  file_name String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("productbrochures")
 }

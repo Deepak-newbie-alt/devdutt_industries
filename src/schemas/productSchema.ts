@@ -118,3 +118,21 @@ export const getProductByIdParamsSchema=z.object({
 })
 
 export type TgetProductByIdParams=z.infer<typeof getProductByIdParamsSchema>;
+
+export const updateProductByIdSchema=z.object({
+    params:z.object({
+        productId:z
+        .coerce
+        .number()
+        .int("Product id must be an integer")
+        .positive("Product id must be positive")
+    }),
+
+    body:createProductSchema.shape.body.partial()
+    .refine(
+        (data)=>Object.keys(data).length>0,
+        {message:"Atleast one field must be provided"}
+    )
+})
+
+export type TupdateProductById=z.infer<typeof updateProductByIdSchema>;

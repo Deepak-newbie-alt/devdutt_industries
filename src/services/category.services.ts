@@ -1,6 +1,6 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
-import type { TcreateCategoryInput, TgetCategoryByIdParams, TgetCategoryQuery } from "../schemas/categorySchema.js";
+import type { TcreateCategoryInput, TgetCategoryByIdParams, TgetCategoryQuery, TupdateCategory } from "../schemas/categorySchema.js";
 
 export const categoryService={
     createCategory:async(body:TcreateCategoryInput["body"])=>{
@@ -41,6 +41,9 @@ export const categoryService={
             take:limit,
             skip,
             where,
+            orderBy: {
+            createdAt: "desc"
+            },
             include:{
                 products:{
                     select:{
@@ -89,6 +92,38 @@ export const categoryService={
         };
 
         const category=await prisma.category.findUnique(prismaQuery);
+
+        return category;
+    },
+
+    updateCategory:async(params:TupdateCategory["params"],body:TupdateCategory["body"])=>{
+        const {categoryId}=params;
+
+        const {name,slug,description,displayOrder,status}=body;
+
+        const prismaQuery:Prisma.CategoryUpdateArgs={
+            where:{
+                id:categoryId
+            },
+            data:{
+                ...(name!==undefined?{name}:{}),
+                ...(slug!==undefined?{slug}:{}),
+                ...(description!==undefined?{description}:{}),
+                ...(displayOrder!==undefined?{displayOrder}:{}),
+                ...(status!==undefined?{status}:{})
+            },
+            include:{
+                products:{
+                    select:{
+                        id:true,
+                        name:true,
+                        price:true
+                    }
+                }
+            }
+        }
+
+        const category=await prisma.category.update(prismaQuery);
 
         return category;
     }

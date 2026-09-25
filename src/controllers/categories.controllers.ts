@@ -3,8 +3,8 @@ import { catchAsync } from "../utils/catchAsync.js";
 import ApiResponse from "../utils/ApiResponse.js";
 
 //types
-import type { ValidatedRequest } from "../types/VatidatedRequest.js";
-import type { TcreateCategoryInput, TgetCategoryByIdParams, TgetCategoryQuery } from "../schemas/categorySchema.js";
+import type { ValidatedRequest } from "../types/ValidatedRequest.js";
+import type { TcreateCategoryInput, TgetCategoryByIdParams, TgetCategoryQuery, TupdateCategory } from "../schemas/categorySchema.js";
 import { categoryService } from "../services/category.services.js";
 import ApiError from "../utils/ApiError.js";
 
@@ -39,5 +39,16 @@ export const getCategoryById=catchAsync<ValidatedRequest<TgetCategoryByIdParams>
     res.status(200).json(
         new ApiResponse(200,"Category by id fetched successfully",data)
     )
+    return;
+})
+
+export const updateCategory=catchAsync<ValidatedRequest<TupdateCategory>>(async(req,res:Response)=>{
+
+    const category=await categoryService.updateCategory(req.validated.params,req.validated.body);
+
+    res.status(200).json(
+        new ApiResponse(200,"Category updated successfully",category)
+    )
+
     return;
 })
