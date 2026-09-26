@@ -7,12 +7,12 @@ export const createProductBrochureSchema=z.object({
         .number()
         .int("Product id must be an integer")
         .positive("Product id must be positive"),
-        file_url:z
+        fileUrl:z
         .string()
         .trim()
         .min(1,"You must provide file url")
         .url("Please provide a valid url"),
-        file_name:z
+        fileName:z
         .string()
         .min(1,"Please provide a file name")
         .max(255,"File name is too long")

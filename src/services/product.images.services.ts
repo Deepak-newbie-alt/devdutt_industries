@@ -7,8 +7,8 @@ export const productImageService={
         const productImage=await prisma.productImage.create({
             data:{
                 productId:body.productId,
-                image_url:body.image_url,
-                display_order:body.display_order
+                imageUrl:body.imageUrl,
+                displayOrder:body.displayOrder
             }
         })
 

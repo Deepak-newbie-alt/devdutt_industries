@@ -8,13 +8,13 @@ export const createProductImageSchema = z.object({
     .int("Product ID must be an integer")
     .positive("Product ID must be positive"),
 
-    image_url: z
+    imageUrl: z
     .string()
     .trim()
     .min(1,"Product image_url is required")
     .url("Image URL must be a valid URL"),
 
-    display_order: z
+    displayOrder: z
     .coerce
     .number()
     .int("Display order must be an integer")

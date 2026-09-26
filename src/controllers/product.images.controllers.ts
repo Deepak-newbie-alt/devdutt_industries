@@ -9,8 +9,8 @@ import ApiResponse from "../utils/ApiResponse.js";
 export const createProductImage=catchAsync<ValidatedRequest<TcreateProductImageInput>>(async(req,res:Response)=>{
     const data=await productImageService.createProductImage(req.validated.body);
 
-    res.status(200).json(
-        new ApiResponse(200,"Product image created successfully",data)
+    res.status(201).json(
+        new ApiResponse(201,"Product image created successfully",data)
     )
     return;
 })

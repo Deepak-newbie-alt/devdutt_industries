@@ -8,8 +8,8 @@ export const productBrochureService={
         const productBrochure=await prisma.productBrochure.create({
             data:{
                 productId:body.productId,
-                file_url:body.file_url,
-                file_name:body.file_name
+                fileUrl:body.fileUrl,
+                fileName:body.fileName
             }
         })
 

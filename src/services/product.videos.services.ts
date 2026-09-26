@@ -7,9 +7,9 @@ export const productVideoService={
         const productVideo=await prisma.productVideo.create({
             data:{
                 productId:body.productId,
-                youtube_url:body.youtube_url,
+                youtubeUrl:body.youtubeUrl,
                 title:body.title,
-                display_order:body.display_order
+                displayOrder:body.displayOrder
             }
         })
 

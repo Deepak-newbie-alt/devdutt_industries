@@ -56,3 +56,13 @@ export const updateProduct=catchAsync<ValidatedRequest<TupdateProductById>>(asyn
     )
     return;
 })
+
+export const deleteProductById=catchAsync<ValidatedRequest<TgetProductByIdParams>>(async(req,res:Response)=>{
+    await productService.deleteProductById(req.validated.params);
+
+
+    res.status(200).json(
+        new ApiResponse(200,'Product deleted successfully',{})
+    )
+    return;
+})

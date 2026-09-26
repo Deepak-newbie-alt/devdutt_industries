@@ -7,7 +7,7 @@ export const createProductVideoSchema=z.object({
         .number()
         .int("Product Id must be integer")
         .positive("Product id must be positive"),
-        youtube_url:z
+        youtubeUrl:z
         .string()
         .trim()
         .min(1,"Url is required")
@@ -17,7 +17,7 @@ export const createProductVideoSchema=z.object({
         .trim()
         .min(1,'Title is required')
         .max(200,"Title is too long"),
-        display_order:z
+        displayOrder:z
         .coerce
         .number()
         .int("Display order must be integer")

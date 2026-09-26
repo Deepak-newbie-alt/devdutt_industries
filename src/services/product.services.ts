@@ -69,7 +69,19 @@ export const productService={
             images:{
                 select:{
                     id:true,
-                    image_url:true
+                    imageUrl:true
+                }
+            },
+            videos:{
+                select:{
+                    id:true,
+                    youtubeUrl:true
+                }
+            },
+            brochure:{
+                select:{
+                    id:true,
+                    fileName:true
                 }
             }
         }
@@ -104,12 +116,30 @@ export const productService={
         where:{
             id:productId
         },
-        include:{
-            category:{
+        include: {
+            category: {
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true
+                }
+            },
+            images:{
                 select:{
                     id:true,
-                    name:true,
-                    slug:true
+                    imageUrl:true
+                }
+            },
+            videos:{
+                select:{
+                    id:true,
+                    youtubeUrl:true
+                }
+            },
+            brochure:{
+                select:{
+                    id:true,
+                    fileName:true
                 }
             }
         }
@@ -156,5 +186,15 @@ export const productService={
         const product=await prisma.product.update(prismaQuery);
 
         return product;
+    },
+
+    deleteProductById:async(params:TgetProductByIdParams["params"])=>{
+        const {productId}=params;
+
+        await prisma.product.delete({
+            where:{
+                id:productId
+            }
+        });
     }
 }

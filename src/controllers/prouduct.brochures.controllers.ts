@@ -9,8 +9,8 @@ import ApiResponse from "../utils/ApiResponse.js";
 export const createProductBrochure=catchAsync<ValidatedRequest<TcreateProductBrochureInput>>(async(req,res:Response)=>{
     const data=await productBrochureService.createProductBrochure(req.validated.body);
 
-    res.status(200).json(
-        new ApiResponse(200,"Product brochure created successfully",data)
+    res.status(201).json(
+        new ApiResponse(201,"Product brochure created successfully",data)
     )
     return;
 })
