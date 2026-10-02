@@ -83,6 +83,14 @@ export const productService={
                     id:true,
                     fileName:true
                 }
+            },
+            inquiries:{
+                select:{
+                    id:true,
+                    salespersonId:true,
+                    requirement:true,
+                    phoneNumber:true
+                }
             }
         }
     };
@@ -141,6 +149,14 @@ export const productService={
                     id:true,
                     fileName:true
                 }
+            },
+            inquiries:{
+                select:{
+                    id:true,
+                    salespersonId:true,
+                    requirement:true,
+                    phoneNumber:true
+                }
             }
         }
     })
@@ -191,9 +207,12 @@ export const productService={
     deleteProductById:async(params:TgetProductByIdParams["params"])=>{
         const {productId}=params;
 
-        await prisma.product.delete({
+        await prisma.product.update({
             where:{
                 id:productId
+            },
+            data:{
+                status:"INACTIVE"
             }
         });
     }

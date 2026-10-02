@@ -40,6 +40,12 @@ enum Unit {
   Machine
 }
 
+enum InquiryStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
 model User {
   id           Int        @id @default(autoincrement())
   name         String
@@ -48,6 +54,7 @@ model User {
   passwordHash String
   role         UserRole
   status       UserStatus @default(ACTIVE)
+  inquiries    Inquiry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,6 +91,7 @@ model Product {
   images               ProductImage[]
   videos               ProductVideo[]
   brochure             ProductBrochure?
+  inquiries            Inquiry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -126,4 +134,17 @@ model ProductBrochure {
   updatedAt DateTime @updatedAt
 
   @@map("productbrochures")
+}
+
+model Inquiry {
+  id            Int           @id @default(autoincrement())
+  productId     Int
+  product       Product       @relation(fields: [productId], references: [id])
+  salespersonId Int?
+  salesman      User?         @relation(fields: [salespersonId], references: [id], onDelete: SetNull)
+  requirement   String        @db.VarChar(1200)
+  phoneNumber   String
+  status        InquiryStatus @default(OPEN)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }

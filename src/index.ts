@@ -4,6 +4,7 @@ import categoryRoutes from "./routes/categories.routes.js";
 import productImageRoutes from "./routes/product.images.routes.js";
 import productVideoRoutes from "./routes/product.videos.routes.js";
 import productBrochureRoutes from "./routes/product.brochures.routes.js";
+import inquiryRoutes from "./routes/inquiry.routes.js";
 
 import { errorHandler } from "./middlewares/errorMiddleware.js";
 
@@ -18,6 +19,7 @@ app.use("/api/v1/category",categoryRoutes);
 app.use("/api/v1/product/images",productImageRoutes);
 app.use("/api/v1/product/videos",productVideoRoutes);
 app.use("/api/v1/product/brochure",productBrochureRoutes);
+app.use("/api/v1/inquiry",inquiryRoutes);
 
 app.use(errorHandler);
 
