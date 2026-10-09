@@ -1,12 +1,14 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
-import type { TcreateInquiryInput, TgetInquiryParams, TgetInquiryQuery } from "../schemas/inquirySchema.js";
+import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
+import ApiError from "../utils/ApiError.js";
 
 
 
 export const InquiryService={
     createInquiry:async(body:TcreateInquiryInput["body"])=>{
-        const inquiry=await prisma.inquiry.create({
+        return await prisma.$transaction(async(tx)=>{
+            const inquiry=await tx.inquiry.create({
             data:{
                 productId:body.productId,
                 phoneNumber:body.phoneNumber,
@@ -14,7 +16,15 @@ export const InquiryService={
             }
         })
 
-        return inquiry;
+        const activity=await tx.inquiryActivity.create({
+            data:{
+                inquiryId:inquiry.id,
+                activityType:"CREATED"
+            }
+        })
+
+        return {inquiry,activity};
+        })
     },
 
     getInquiries:async(query:TgetInquiryQuery["query"])=>{
@@ -57,7 +67,122 @@ export const InquiryService={
             }
         })
         
-
         return inquiry;
+    },
+    claimInquiry:async(body:TclaimInquiry["body"],params:TclaimInquiry["params"])=>{
+        const {inquiryId}=params;
+
+        return await prisma.$transaction(async(tx)=>{
+            const result=await tx.inquiry.updateMany({
+            where:{
+                id:inquiryId,
+                status:"OPEN",
+                salespersonId:null
+            },
+            data:{
+                status:"IN_PROGRESS",
+                salespersonId:body.salespersonId
+            }
+        })
+
+        if(result.count==0){
+            throw new ApiError(409,"Inquiry already taken by a salesman")
+        }
+
+        const inquiry=await tx.inquiry.findUniqueOrThrow({
+            where:{
+                id:inquiryId
+            }
+        })
+
+        const activity=await tx.inquiryActivity.create({
+            data:{
+                inquiryId:inquiryId,
+                salespersonId:body.salespersonId,
+                activityType:"CLAIMED"
+            }
+        })
+
+        return {inquiry,activity};
+        })
+    },
+    contactCustomer:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"])=>{
+        const {inquiryId}=params;
+        const {salespersonId,note}=body;
+        const activity=await prisma.inquiryActivity.create({
+            data:{
+                inquiryId:inquiryId,
+                salespersonId:salespersonId,
+                activityType:"CUSTOMER_CONTACTED",
+                note:note
+            }
+        })
+
+        return activity;
+    },
+    addNote:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"])=>{
+        const {inquiryId}=params;
+        const {salespersonId,note}=body;
+        const activity=await prisma.inquiryActivity.create({
+            data:{
+                inquiryId:inquiryId,
+                salespersonId:salespersonId,
+                activityType:"NOTE_ADDED",
+                note:note
+            }
+        })
+
+        return activity;
+    },
+    closeInquiry:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"])=>{
+        const {inquiryId}=params;
+        const {salespersonId,note}=body;
+
+        return await prisma.$transaction(async(tx)=>{
+            const result=await tx.inquiry.updateMany({
+            where:{
+                id:inquiryId,
+                status:"IN_PROGRESS"
+            },
+            data:{
+                status:"CLOSED"
+            }
+        })
+
+        if(result.count==0){
+            throw new ApiError(409,"Inquiry cannot be closed");
+        }
+
+        const activity=await tx.inquiryActivity.create({
+            data:{
+                inquiryId:inquiryId,
+                salespersonId:salespersonId,
+                note:note,
+                activityType:"STATUS_CHANGED"
+            }
+        })
+
+        const inquiry=await tx.inquiry.findUniqueOrThrow({
+            where:{
+                id:inquiryId
+            }
+        })
+
+        return {inquiry,activity};
+        })
+    },
+    getActivities:async(params:TinquiryActivity["params"])=>{
+        const {inquiryId}=params;
+
+        const activities=await prisma.inquiryActivity.findMany({
+            where:{
+                inquiryId:inquiryId
+            },
+            orderBy:{
+                createdAt:"asc"
+            }
+        })
+
+        return activities;
     }
 }

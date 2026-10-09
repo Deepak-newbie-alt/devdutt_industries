@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { catchAsync } from "../utils/catchAsync.js";
 import type { ValidatedRequest } from '../types/ValidatedRequest.js';
 import { InquiryService } from '../services/inquiry.services.js';
-import type { TcreateInquiryInput, TgetInquiryParams, TgetInquiryQuery } from '../schemas/inquirySchema.js';
+import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 
@@ -30,6 +30,52 @@ export const getInquiryById=catchAsync<ValidatedRequest<TgetInquiryParams>>(asyn
 
     res.status(200).json(
         new ApiResponse(200,"Inquiry fetched successfully",data)
+    )
+    return;
+})
+
+export const claimInquiry=catchAsync<ValidatedRequest<TclaimInquiry>>(async(req,res:Response)=>{
+    const data=await InquiryService.claimInquiry(req.validated.body,req.validated.params);
+
+    res.status(200).json(
+        new ApiResponse(200,'Inquiry claimed successfully',data)
+    )
+    return;
+})
+
+export const contactCustomer=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
+    const data=await InquiryService.contactCustomer(req.validated.params,req.validated.body);
+
+    res.status(201).json(
+        new ApiResponse(201,"Customer contacted",data)
+    )
+
+    return;
+})
+
+export const addNote=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
+    const data=await InquiryService.addNote(req.validated.params,req.validated.body);
+
+    res.status(201).json(
+        new ApiResponse(201,"Added a note",data)
+    )
+    return;
+})
+
+export const closeInquiry=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
+    const data=await InquiryService.closeInquiry(req.validated.params,req.validated.body);
+
+    res.status(201).json(
+        new ApiResponse(201,"Inquiry closed",data)
+    )
+    return;
+})
+
+export const getActivities=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
+    const data=await InquiryService.getActivities(req.validated.params);
+
+    res.status(200).json(
+        new ApiResponse(200,"Activity history fetched successfully",data)
     )
     return;
 })

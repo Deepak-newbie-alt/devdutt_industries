@@ -56,3 +56,51 @@ export const getInquiryParams=z.object({
 })
 
 export type TgetInquiryParams=z.infer<typeof getInquiryParams>;
+
+
+
+export const claimInquirySchema=z.object({
+    //temporary
+    body:z.object({
+        salespersonId:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+    }),
+
+    params:z.object({
+        inquiryId:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TclaimInquiry=z.infer<typeof claimInquirySchema>;
+
+export const inquiryActivitySchema=z.object({
+    body:z.object({
+        salespersonId:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive"),
+        note:z
+        .string()
+        .trim()
+        .min(1,"Note is required")
+        .max(350,"Note is too long"),
+    }),
+
+    params:z.object({
+        inquiryId:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TinquiryActivity=z.infer<typeof inquiryActivitySchema>;

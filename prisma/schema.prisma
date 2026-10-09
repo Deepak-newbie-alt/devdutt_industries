@@ -46,18 +46,37 @@ enum InquiryStatus {
   CLOSED
 }
 
-model User {
-  id           Int        @id @default(autoincrement())
-  name         String
-  email        String     @unique @db.VarChar(255)
-  phone        String     @unique @db.VarChar(20)
-  passwordHash String
-  role         UserRole
-  status       UserStatus @default(ACTIVE)
-  inquiries    Inquiry[]
+enum InquiryActivityType {
+  CREATED
+  CLAIMED
+  CUSTOMER_CONTACTED
+  NOTE_ADDED
+  STATUS_CHANGED
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum QuotationRevisionStatus {
+  DRAFT
+  SENT
+  REVISION_REQUESTED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model User {
+  id              Int                 @id @default(autoincrement())
+  name            String
+  email           String              @unique @db.VarChar(255)
+  phone           String              @unique @db.VarChar(20)
+  passwordHash    String
+  role            UserRole
+  status          UserStatus          @default(ACTIVE)
+  inquiries       Inquiry[]
+  inquiryActivity InquiryActivity[]
+  quotations      Quotation[]
+  revisions       QuotationRevision[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@map("users")
 }
@@ -137,14 +156,117 @@ model ProductBrochure {
 }
 
 model Inquiry {
-  id            Int           @id @default(autoincrement())
-  productId     Int
-  product       Product       @relation(fields: [productId], references: [id])
+  id              Int               @id @default(autoincrement())
+  productId       Int
+  product         Product           @relation(fields: [productId], references: [id])
+  salespersonId   Int?
+  salesperson     User?             @relation(fields: [salespersonId], references: [id], onDelete: SetNull)
+  requirement     String            @db.VarChar(1200)
+  phoneNumber     String
+  status          InquiryStatus     @default(OPEN)
+  inquiryActivity InquiryActivity[]
+  quotation       Quotation?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("inquiries")
+}
+
+model InquiryActivity {
+  id            Int                 @id @default(autoincrement())
+  inquiryId     Int
+  inquiry       Inquiry             @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
   salespersonId Int?
-  salesman      User?         @relation(fields: [salespersonId], references: [id], onDelete: SetNull)
-  requirement   String        @db.VarChar(1200)
-  phoneNumber   String
-  status        InquiryStatus @default(OPEN)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  salesperson   User?               @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
+  activityType  InquiryActivityType
+  note          String?             @db.VarChar(350)
+  createdAt     DateTime            @default(now())
+
+  @@map("inquiryactivities")
+}
+
+model Quotation {
+  id              Int     @id @default(autoincrement())
+  inquiryId       Int     @unique
+  inquiry         Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Restrict)
+  salespersonId   Int
+  salesperson     User    @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
+  quotationNumber String  @unique @db.VarChar(50)
+
+  revisions QuotationRevision[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@map("quotations")
+}
+
+model QuotationRevision {
+  id                      Int                     @id @default(autoincrement())
+  quotationId             Int
+  quotation               Quotation               @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  revisionNumber          Int
+  quotationRevisionStatus QuotationRevisionStatus @default(DRAFT)
+
+  //Buyer snapshot
+  buyerName    String  @db.VarChar(50)
+  companyName  String? @db.VarChar(50)
+  address      String
+  gstNumber    String  @db.VarChar(50)
+  mobileNumber String  @db.VarChar(50)
+  email        String? @db.VarChar(255)
+
+  //Machine snapshot
+  productName           String @db.VarChar(200)
+  machineSpecifications Json
+
+  terms         Json
+  validUntil    DateTime
+  pdfUrl        String?
+  salespersonId Int
+  salesperson   User     @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
+
+  items QuotationItem[]
+
+  taxableAmount Decimal  @db.Decimal(12, 2)
+  cgstRate      Decimal? @db.Decimal(5, 2)
+  cgstAmount    Decimal? @db.Decimal(12, 2)
+
+  sgstRate   Decimal? @db.Decimal(5, 2)
+  sgstAmount Decimal? @db.Decimal(12, 2)
+
+  igstRate   Decimal? @db.Decimal(5, 2)
+  igstAmount Decimal? @db.Decimal(12, 2)
+
+  grandTotal Decimal @db.Decimal(12, 2)
+  currency   String  @default("INR") @db.VarChar(3)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([quotationId, revisionNumber])
+  @@map("quotationrevisions")
+}
+
+model QuotationItem {
+  id                  Int               @id @default(autoincrement())
+  quotationRevisionId Int
+  quotationRevision   QuotationRevision @relation(fields: [quotationRevisionId], references: [id], onDelete: Cascade)
+
+  name         String  @db.VarChar(100)
+  description  String?
+  quantity     Int     @default(1)
+  unit         Unit
+  unitPrice    Decimal @db.Decimal(12, 2)
+  amount       Decimal @db.Decimal(12, 2)
+  displayOrder Int     @default(0)
+
+  @@index([quotationRevisionId])
+  @@map("quotationitems")
+}
+
+model QuotationNumberCounter {
+  year       Int @id
+  lastNumber Int
+
+  @@map("quotationnumbercounters")
 }
