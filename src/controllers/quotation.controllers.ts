@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { TcreateQuotation, TsendQuotation } from "../schemas/quotationSchema.js";
+import type { TcreateQuotation, TeditQuotation, TgetQuotationRevisionParams, TsendQuotation } from "../schemas/quotationSchema.js";
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { QuotationService } from "../services/quotation.services.js";
@@ -20,6 +20,24 @@ export const sendQuotation=catchAsync<ValidatedRequest<TsendQuotation>>(async(re
 
     res.status(200).json(
         new ApiResponse(200,"Quotation sent successfully",data)
+    )
+    return;
+})
+
+export const editQuotation=catchAsync<ValidatedRequest<TeditQuotation>>(async(req,res:Response)=>{
+    const data=await QuotationService.editQuotation(req.validated.params,req.validated.body);
+
+    res.status(200).json(
+        new ApiResponse(200,"Quotation edited successfully",data)
+    )
+    return;
+})
+
+export const getRevisions=catchAsync<ValidatedRequest<TgetQuotationRevisionParams>>(async(req,res:Response)=>{
+    const data=await QuotationService.getRevisions(req.validated.params);
+
+    res.status(200).json(
+        new ApiResponse(200,"Revisions fetched successfully",data)
     )
     return;
 })

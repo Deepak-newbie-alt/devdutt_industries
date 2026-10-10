@@ -32,7 +32,6 @@ const validUntilSchema = z.coerce
     "Expiry date cannot be in the past"
   );
 
-
 const quotationItemSchema = z.object({
     name: z
         .string()
@@ -67,24 +66,23 @@ const quotationItemSchema = z.object({
 
 export type TquotationItem=z.infer<typeof quotationItemSchema>;
 
-export const createQuotationSchema = z.object({
-    body: z.object({
+const quotationRevisionBodySchema= z.object({
         salespersonId: z
             .coerce
             .number()
             .int("Salesperson Id must be an integer")
             .positive("Salesperson Id must be positive"),
 
-        // quotationRevisionStatus: z.enum(
-        //     [
-        //         "DRAFT",
-        //         "SENT",
-        //         "REVISION_REQUESTED",
-        //         "ACCEPTED",
-        //         "REJECTED"
-        //     ],
-        //     "Please provide a valid quotation revision status"
-        // ),
+        quotationRevisionStatus: z.enum(
+            [
+                "DRAFT",
+                "SENT",
+                "REVISION_REQUESTED",
+                "ACCEPTED",
+                "REJECTED"
+            ],
+            "Please provide a valid quotation revision status"
+        ),
 
         buyerName: z
             .string()
@@ -141,9 +139,9 @@ export const createQuotationSchema = z.object({
 
         validUntil:validUntilSchema,
 
-        // pdfUrl: z
-        //     .url("Please provide a valid PDF URL")
-        //     .optional(),
+        pdfUrl: z
+            .url("Please provide a valid PDF URL")
+            .optional(),
 
         cgstRate:taxRateSchema
             .optional(),
@@ -157,6 +155,12 @@ export const createQuotationSchema = z.object({
         items: z
             .array(quotationItemSchema)
             .min(1, "At least one quotation item is required")
+    })
+
+export const createQuotationSchema = z.object({
+    body:quotationRevisionBodySchema.omit({
+        quotationRevisionStatus:true,
+        pdfUrl:true
     }).superRefine((data, ctx) => {
         const hasCgst = data.cgstRate != undefined;
         const hasSgst = data.sgstRate != undefined;
@@ -229,13 +233,23 @@ export type TsendQuotation=z.infer<typeof sendQuotationSchema>;
 
 export const editQuotationSchema=z.object({
     params:sendQuotationSchema.shape.params,
-    body:createQuotationSchema.shape.body.omit({
-        salespersonId:true
-    }).partial()
-    .refine(
-        (data)=>Object.keys(data).length>0,
-        {message:"Atleast one field must be provided"}
-    )
+    body:quotationRevisionBodySchema.omit({
+        salespersonId:true,
+        quotationRevisionStatus:true,
+        pdfUrl:true
+    })
 })
 
 export type TeditQuotation=z.infer<typeof editQuotationSchema>;
+
+export const getQuotationRevisionParamsSchema=z.object({
+    params:z.object({
+        quotationId:z
+        .coerce
+        .number()
+        .int("Id must be integer")
+        .positive('Id must be positive')
+    })
+})
+
+export type TgetQuotationRevisionParams=z.infer<typeof getQuotationRevisionParamsSchema>;

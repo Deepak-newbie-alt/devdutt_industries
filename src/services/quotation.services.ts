@@ -3,6 +3,7 @@ import prisma from "../lib/prisma.js";
 import type {
     TcreateQuotation,
     TeditQuotation,
+    TgetQuotationRevisionParams,
     TquotationItem,
     TsendQuotation
 } from "../schemas/quotationSchema.js";
@@ -173,7 +174,8 @@ export const QuotationService = {
         return await prisma.$transaction(async(tx)=>{
             const revision=await tx.quotationRevision.update({
                 where:{
-                    id:params.revisionId
+                    id:params.revisionId,
+                    quotationRevisionStatus:"DRAFT"
                 },
                 data:{
                     quotationRevisionStatus:"SENT",
@@ -202,116 +204,157 @@ export const QuotationService = {
             return revision;
         })
     },
-    editQuotation:async(params:TeditQuotation["params"],body:TeditQuotation["body"])=>{
-        const {buyerName,companyName,address,gstNumber,mobileNumber,email,productName,machineSpecifications,terms,validUntil,items}=body;
+    
+    editQuotation: async (
+        params: TeditQuotation["params"],
+        body: TeditQuotation["body"]
+    ) => {
+        const {
+            buyerName,
+            companyName,
+            address,
+            gstNumber,
+            mobileNumber,
+            email,
+            productName,
+            machineSpecifications,
+            terms,
+            validUntil,
+            cgstRate,
+            sgstRate,
+            igstRate,
+            items
+        } = body;
 
-            // Calculate quotation amounts
-            let taxableAmount = new Prisma.Decimal(0);
+        // Calculate taxable amount from all submitted items
+        let taxableAmount = new Prisma.Decimal(0);
 
-            if(items){
-                for (const item of items) {
-                const quantity = new Prisma.Decimal(item.quantity);
-                const unitPrice = new Prisma.Decimal(item.unitPrice);
+        for (const item of items) {
+            const quantity = new Prisma.Decimal(item.quantity);
+            const unitPrice = new Prisma.Decimal(item.unitPrice);
 
-                taxableAmount = taxableAmount.add(
-                    quantity.mul(unitPrice)
-                );
-            }
-            }
+            taxableAmount = taxableAmount.add(
+                quantity.mul(unitPrice)
+            );
+        }
 
-            const cgstRate = body.cgstRate
-                ? new Prisma.Decimal(body.cgstRate)
+        // Convert provided rates to Decimal; absent rates mean no tax
+        const cgst = cgstRate !== undefined
+            ? new Prisma.Decimal(cgstRate)
+            : null;
+
+        const sgst = sgstRate !== undefined
+            ? new Prisma.Decimal(sgstRate)
+            : null;
+
+        const igst = igstRate !== undefined
+            ? new Prisma.Decimal(igstRate)
+            : null;
+
+        const cgstAmount =
+            cgst !== null
+                ? taxableAmount.mul(cgst).div(100)
                 : null;
 
-            const sgstRate = body.sgstRate
-                ? new Prisma.Decimal(body.sgstRate)
+        const sgstAmount =
+            sgst !== null
+                ? taxableAmount.mul(sgst).div(100)
                 : null;
 
-            const igstRate = body.igstRate
-                ? new Prisma.Decimal(body.igstRate)
+        const igstAmount =
+            igst !== null
+                ? taxableAmount.mul(igst).div(100)
                 : null;
 
-            let cgstAmount: Prisma.Decimal | null = null;
-            let sgstAmount: Prisma.Decimal | null = null;
-            let igstAmount: Prisma.Decimal | null = null;
+        const grandTotal = taxableAmount
+            .add(cgstAmount ?? 0)
+            .add(sgstAmount ?? 0)
+            .add(igstAmount ?? 0);
 
-            if (cgstRate !== null && sgstRate !== null) {
-                cgstAmount = taxableAmount
-                    .mul(cgstRate)
-                    .div(100);
-
-                sgstAmount = taxableAmount
-                    .mul(sgstRate)
-                    .div(100);
-            }
-
-            if (igstRate !== null) {
-                igstAmount = taxableAmount
-                    .mul(igstRate)
-                    .div(100);
-            }
-
-            const grandTotal = taxableAmount
-                .add(cgstAmount ?? 0)
-                .add(sgstAmount ?? 0)
-                .add(igstAmount ?? 0);
-
-        return await prisma.$transaction(async(tx)=>{
-            const revision=await tx.quotationRevision.update({
-                where:{
-                    id:params.revisionId
+        return prisma.$transaction(async (tx) => {
+            // Only draft revisions can be edited
+            const revision = await tx.quotationRevision.update({
+                where: {
+                    id: params.revisionId,
+                    quotationRevisionStatus: "DRAFT"
                 },
-                data:{
-                    ...(buyerName!==undefined?{buyerName}:{}),
-                    ...(companyName!==undefined?{companyName}:{}),
-                    ...(address!==undefined?{address}:{}),
-                    ...(gstNumber!==undefined?{gstNumber}:{}),
-                    ...(mobileNumber!==undefined?{mobileNumber}:{}),
-                    ...(email!==undefined?{email}:{}),
-                    ...(productName!==undefined?{productName}:{}),
-                    ...(machineSpecifications!==undefined?{machineSpecifications}:{}),
-                    ...(terms!==undefined?{terms}:{}),
-                    ...(validUntil!==undefined?{validUntil}:{}),
-                    ...(items!==undefined?{
-                        taxableAmount,
-                        cgstRate,
-                        cgstAmount,
-                        sgstRate,
-                        sgstAmount,
-                        igstRate,
-                        igstAmount,
-                        grandTotal
-                    }:{}),
+                data: {
+                    buyerName,
+                    companyName: companyName ?? null,
+                    address,
+                    gstNumber,
+                    mobileNumber,
+                    email: email ?? null,
+                    productName,
+                    machineSpecifications,
+                    terms,
+                    validUntil,
+
+                    taxableAmount,
+                    cgstRate: cgst,
+                    cgstAmount,
+                    sgstRate: sgst,
+                    sgstAmount,
+                    igstRate: igst,
+                    igstAmount,
+                    grandTotal
                 }
             });
 
-            if (items) {
-                await tx.quotationItem.deleteMany({
-                    where: {
-                        quotationRevisionId: params.revisionId
+            // Replace all quotation items
+            await tx.quotationItem.deleteMany({
+                where: {
+                    quotationRevisionId: revision.id
+                }
+            });
+
+            await tx.quotationItem.createMany({
+                data: items.map((item:TquotationItem) => {
+                    const quantity = new Prisma.Decimal(item.quantity);
+                    const unitPrice = new Prisma.Decimal(item.unitPrice);
+
+                    return {
+                        quotationRevisionId: revision.id,
+                        name: item.name,
+                        description: item.description ?? null,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                        unitPrice,
+                        amount: quantity.mul(unitPrice),
+                        displayOrder: item.displayOrder
+                    };
+                })
+            });
+
+            return tx.quotationRevision.findUniqueOrThrow({
+                where: {
+                    id: revision.id
+                },
+                include: {
+                    items: true
+                }
+            });
+        });
+    },
+    getRevisions:async(params:TgetQuotationRevisionParams["params"])=>{
+        const {quotationId}=params;
+
+        const revisions=await prisma.quotationRevision.findMany({
+            where:{
+                quotationId
+            },
+            include:{
+                quotation:{
+                    select:{
+                        inquiryId:true,
+                        quotationNumber:true
                     }
-                });
-
-                await tx.quotationItem.createMany({
-                    data: items.map((item:TquotationItem)=>{
-                        const quantity = new Prisma.Decimal(item.quantity);
-                        const unitPrice = new Prisma.Decimal(item.unitPrice);
-
-                        return {
-                            quotationRevisionId: revision.id,
-                            name: item.name,
-                            description: item.description ?? null,
-                            quantity: item.quantity,
-                            unit: item.unit,
-                            unitPrice,
-                            amount: quantity.mul(unitPrice),
-                            displayOrder: item.displayOrder
-                        };
-                    })
-                });
+                },
+                items:true
             }
-
-            return revision;
         })
+
+        return revisions;
     }
+
 };
