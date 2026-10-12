@@ -8,6 +8,9 @@ import inquiryRoutes from "./routes/inquiry.routes.js";
 import quotationRoutes from "./routes/quotation.routes.js";
 import userRoutes from "./routes/users.routes.js";
 
+//jobs
+import {startQuotationExpiryJob} from "./jobs/expireQuotationRevisions.js"
+
 import { errorHandler } from "./middlewares/errorMiddleware.js";
 
 const app = express();
@@ -15,6 +18,7 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 8000;
+
 
 app.use("/api/v1/products",productRoutes);
 app.use("/api/v1/category",categoryRoutes);
@@ -30,3 +34,5 @@ app.use(errorHandler);
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
+
+startQuotationExpiryJob();

@@ -58,6 +58,7 @@ enum QuotationRevisionStatus {
   DRAFT
   SENT
   REVISION_REQUESTED
+  SUPERSEDED
   ACCEPTED
   REJECTED
   EXPIRED

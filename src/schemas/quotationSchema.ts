@@ -240,7 +240,7 @@ export const editQuotationSchema=z.object({
     })
 })
 
-export type TeditQuotation=z.infer<typeof editQuotationSchema>;
+export type TeditQuotationRevision=z.infer<typeof editQuotationSchema>;
 
 export const getQuotationRevisionParamsSchema=z.object({
     params:z.object({
@@ -253,3 +253,10 @@ export const getQuotationRevisionParamsSchema=z.object({
 })
 
 export type TgetQuotationRevisionParams=z.infer<typeof getQuotationRevisionParamsSchema>;
+
+export const createRevisionSchema=z.object({
+    params:getQuotationRevisionParamsSchema.shape.params,
+    body:editQuotationSchema.shape.body
+})
+
+export type TcreateRevision=z.infer<typeof createRevisionSchema>;

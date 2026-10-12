@@ -1,12 +1,15 @@
+import { editQuotation } from "../controllers/quotation.controllers.js";
 import { Prisma, QuotationRevisionStatus } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
 import type {
     TcreateQuotation,
-    TeditQuotation,
+    TcreateRevision,
+    TeditQuotationRevision,
     TgetQuotationRevisionParams,
     TquotationItem,
     TsendQuotation
 } from "../schemas/quotationSchema.js";
+import ApiError from "../utils/ApiError.js";
 
 export const QuotationService = {
 
@@ -205,9 +208,9 @@ export const QuotationService = {
         })
     },
     
-    editQuotation: async (
-        params: TeditQuotation["params"],
-        body: TeditQuotation["body"]
+    editQuotationRevision: async (
+        params: TeditQuotationRevision["params"],
+        body: TeditQuotationRevision["body"]
     ) => {
         const {
             buyerName,
@@ -355,6 +358,217 @@ export const QuotationService = {
         })
 
         return revisions;
-    }
+    },
+    requestRevision:async(params:TeditQuotationRevision["params"])=>{
+        const {revisionId}=params;
 
+        const revision=await prisma.quotationRevision.updateMany({
+            where:{
+                    id:revisionId,
+                    quotationRevisionStatus:"SENT"
+                },
+                data:{
+                    quotationRevisionStatus:"REVISION_REQUESTED",
+                }
+        })
+
+        if(revision.count==0){
+            throw new ApiError(409,"Only sent quotations can have revision requests")
+        }
+
+        return {};
+    },
+    createRevision:async(params:TcreateRevision["params"])=>{
+        const {quotationId}=params;
+
+        return await prisma.$transaction(async(tx)=>{
+            const revisions=await tx.quotationRevision.findMany({
+                where:{
+                    quotationId
+                },
+                select:{
+                    revisionNumber:true
+                },
+                orderBy:{
+                    revisionNumber:"desc"
+                }
+            });
+
+            const latestRevisionNumber = revisions[0]?.revisionNumber;
+
+            if (latestRevisionNumber === undefined) {
+                throw new ApiError(404,"No revisions found for this quotation");
+            }
+
+            const latestRevision = await tx.quotationRevision.findUnique({
+                where:{
+                    quotationId_revisionNumber:{
+                        quotationId,
+                        revisionNumber: latestRevisionNumber
+                    },
+                    quotationRevisionStatus:"REVISION_REQUESTED"
+                },
+                include:{
+                    items:true
+                }
+            });
+
+            if (!latestRevision) {
+                throw new ApiError(409,"Can only create new revision if customer requested")
+            }
+
+            await tx.quotationRevision.update({
+                where:{
+                    quotationId_revisionNumber:{
+                        quotationId,
+                        revisionNumber: latestRevisionNumber
+                    }
+                },
+                data:{
+                    quotationRevisionStatus:"SUPERSEDED"
+                }
+            })
+
+            const newRevisionNumber = latestRevisionNumber + 1;
+
+            const newRevision = await tx.quotationRevision.create({
+                data:{
+                    quotationId,
+                    revisionNumber:newRevisionNumber,
+                    quotationRevisionStatus:"DRAFT",
+                    buyerName: latestRevision.buyerName,
+                    companyName: latestRevision.companyName,
+                    address: latestRevision.address,
+                    gstNumber: latestRevision.gstNumber,
+                    mobileNumber: latestRevision.mobileNumber,
+                    email: latestRevision.email,
+                    productName: latestRevision.productName,
+                    machineSpecifications: latestRevision.machineSpecifications as Prisma.InputJsonObject,
+                    terms: latestRevision.terms as Prisma.InputJsonObject,
+                    validUntil: latestRevision.validUntil,
+                    salespersonId: latestRevision.salespersonId,
+                    taxableAmount: latestRevision.taxableAmount,
+                    cgstRate: latestRevision.cgstRate,
+                    cgstAmount: latestRevision.cgstAmount,
+                    sgstRate: latestRevision.sgstRate,
+                    sgstAmount: latestRevision.sgstAmount,
+                    igstRate: latestRevision.igstRate,
+                    igstAmount: latestRevision.igstAmount,
+                    grandTotal: latestRevision.grandTotal
+                },
+                include:{
+                    items:true
+                }
+            });
+
+
+            return newRevision;
+        });
+    },
+    acceptRevision:async(params:TeditQuotationRevision["params"])=>{
+        const {revisionId}=params;
+
+        return await prisma.$transaction(async(tx)=>{
+            const result=await tx.quotationRevision.updateMany({
+                where:{
+                    id:revisionId,
+                    quotationRevisionStatus:"SENT",
+                    validUntil:{
+                        gt: new Date(new Date().setHours(0, 0, 0, 0))
+                    }
+                },
+                data:{
+                    quotationRevisionStatus:"ACCEPTED"
+                }
+            })
+
+            if(result.count==0){
+                throw new ApiError(404,"Can't find revision or invalid revision status");
+            }
+
+            const revision=await tx.quotationRevision.findUnique({
+                where:{
+                    id:revisionId
+                },
+                include:{
+                    quotation:{
+                        select:{
+                            inquiryId:true
+                        }
+                    }
+                }
+            })
+
+            const inquiryId = revision?.quotation?.inquiryId;
+
+            if(!inquiryId){
+                throw new ApiError(404,"Can't find associated inquiry for revision");
+            }
+
+            return await tx.inquiry.update({
+                where:{
+                    id: inquiryId
+                },
+                data:{
+                    status:"CLOSED"
+                },
+                include:{
+                    quotation:true
+                }
+            })
+        })
+    },
+    rejectRevision:async(params:TeditQuotationRevision["params"])=>{
+        const {revisionId}=params;
+
+        return await prisma.$transaction(async(tx)=>{
+            const result=await tx.quotationRevision.updateMany({
+                where:{
+                    id:revisionId,
+                    quotationRevisionStatus:"SENT",
+                    validUntil:{
+                        gt: new Date(new Date().setHours(0, 0, 0, 0))
+                    }
+                },
+                data:{
+                    quotationRevisionStatus:"REJECTED"
+                }
+            })
+
+            if(result.count==0){
+                throw new ApiError(404,"Can't find revision or invalid revision status");
+            }
+
+            const revision=await tx.quotationRevision.findUnique({
+                where:{
+                    id:revisionId
+                },
+                include:{
+                    quotation:{
+                        select:{
+                            inquiryId:true
+                        }
+                    }
+                }
+            })
+
+            const inquiryId = revision?.quotation?.inquiryId;
+
+            if(!inquiryId){
+                throw new ApiError(404,"Can't find associated inquiry for revision");
+            }
+
+            return await tx.inquiry.update({
+                where:{
+                    id: inquiryId
+                },
+                data:{
+                    status:"CLOSED"
+                },
+                include:{
+                    quotation:true
+                }
+            })
+        })
+    }
 };
