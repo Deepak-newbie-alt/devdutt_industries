@@ -5,6 +5,7 @@ import ApiError from "../utils/ApiError.js";
 
 export const errorHandler=(err:unknown,req:Request,res:Response,next:NextFunction)=>{
 
+    console.error(err);
     if(err instanceof Prisma.PrismaClientKnownRequestError){
         if(err.code==="P2002"){
             res.status(409).json({

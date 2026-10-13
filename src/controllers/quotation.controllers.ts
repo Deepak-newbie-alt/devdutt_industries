@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { TcreateQuotation, TcreateRevision, TeditQuotationRevision, TgetQuotationRevisionParams, TsendQuotation } from "../schemas/quotationSchema.js";
+import type { TcreateQuotation, TeditQuotationRevision, TquotationIdParams, TrevisionIdParams, TsendQuotation } from "../schemas/quotationSchema.js";
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { QuotationService } from "../services/quotation.services.js";
@@ -33,7 +33,7 @@ export const editQuotation=catchAsync<ValidatedRequest<TeditQuotationRevision>>(
     return;
 })
 
-export const getRevisions=catchAsync<ValidatedRequest<TgetQuotationRevisionParams>>(async(req,res:Response)=>{
+export const getRevisions=catchAsync<ValidatedRequest<TquotationIdParams>>(async(req,res:Response)=>{
     const data=await QuotationService.getRevisions(req.validated.params);
 
     res.status(200).json(
@@ -42,7 +42,7 @@ export const getRevisions=catchAsync<ValidatedRequest<TgetQuotationRevisionParam
     return;
 })
 
-export const requestRevision=catchAsync<ValidatedRequest<TeditQuotationRevision>>(async(req,res:Response)=>{
+export const requestRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
     const data=await QuotationService.requestRevision(req.validated.params);
 
     res.status(200).json(
@@ -51,13 +51,8 @@ export const requestRevision=catchAsync<ValidatedRequest<TeditQuotationRevision>
     return;
 })
 
-export const createRevision=catchAsync<ValidatedRequest<TcreateRevision>>(async(req,res:Response)=>{
-    const newRevision=await QuotationService.createRevision(req.validated.params);
-
-    const data=await QuotationService.editQuotationRevision(
-        { revisionId: newRevision.id },
-        req.validated.body
-    );
+export const createRevision=catchAsync<ValidatedRequest<TquotationIdParams>>(async(req,res:Response)=>{
+    const data=await QuotationService.createRevision(req.validated.params);
 
     res.status(201).json(
         new ApiResponse(201,"Revision created successfully",data)
@@ -65,20 +60,20 @@ export const createRevision=catchAsync<ValidatedRequest<TcreateRevision>>(async(
     return;
 })
 
-export const acceptRevision=catchAsync<ValidatedRequest<TsendQuotation>>(async(req,res:Response)=>{
+export const acceptRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
     const data=await QuotationService.acceptRevision(req.validated.params);
 
-    res.status(200).json(
-        new ApiResponse(200,"Revision accepted, Inquiry closed",data)
+    res.status(204).json(
+        new ApiResponse(204,"Revision accepted, Inquiry closed",data)
     )
     return;
 })
 
-export const rejectRevision=catchAsync<ValidatedRequest<TsendQuotation>>(async(req,res:Response)=>{
-    const data=await QuotationService.acceptRevision(req.validated.params);
+export const rejectRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
+    const data=await QuotationService.rejectRevision(req.validated.params);
 
-    res.status(200).json(
-        new ApiResponse(200,"Revision rejected, Inquiry closed",data)
+    res.status(204).json(
+        new ApiResponse(204,"Revision rejected, Inquiry closed",data)
     )
     return;
 })

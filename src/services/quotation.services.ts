@@ -1,12 +1,11 @@
-import { editQuotation } from "../controllers/quotation.controllers.js";
-import { Prisma, QuotationRevisionStatus } from "../generated/prisma/client.js";
+import { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
 import type {
     TcreateQuotation,
-    TcreateRevision,
     TeditQuotationRevision,
-    TgetQuotationRevisionParams,
+    TquotationIdParams,
     TquotationItem,
+    TrevisionIdParams,
     TsendQuotation
 } from "../schemas/quotationSchema.js";
 import ApiError from "../utils/ApiError.js";
@@ -339,7 +338,7 @@ export const QuotationService = {
             });
         });
     },
-    getRevisions:async(params:TgetQuotationRevisionParams["params"])=>{
+    getRevisions:async(params:TquotationIdParams["params"])=>{
         const {quotationId}=params;
 
         const revisions=await prisma.quotationRevision.findMany({
@@ -359,7 +358,7 @@ export const QuotationService = {
 
         return revisions;
     },
-    requestRevision:async(params:TeditQuotationRevision["params"])=>{
+    requestRevision:async(params:TrevisionIdParams["params"])=>{
         const {revisionId}=params;
 
         const revision=await prisma.quotationRevision.updateMany({
@@ -378,7 +377,7 @@ export const QuotationService = {
 
         return {};
     },
-    createRevision:async(params:TcreateRevision["params"])=>{
+    createRevision:async(params:TquotationIdParams["params"])=>{
         const {quotationId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -393,13 +392,13 @@ export const QuotationService = {
                     revisionNumber:"desc"
                 }
             });
-
+        
             const latestRevisionNumber = revisions[0]?.revisionNumber;
 
             if (latestRevisionNumber === undefined) {
                 throw new ApiError(404,"No revisions found for this quotation");
             }
-
+        
             const latestRevision = await tx.quotationRevision.findUnique({
                 where:{
                     quotationId_revisionNumber:{
@@ -416,18 +415,23 @@ export const QuotationService = {
             if (!latestRevision) {
                 throw new ApiError(409,"Can only create new revision if customer requested")
             }
+            
 
-            await tx.quotationRevision.update({
-                where:{
-                    quotationId_revisionNumber:{
-                        quotationId,
-                        revisionNumber: latestRevisionNumber
-                    }
+            const result=await tx.quotationRevision.updateMany({
+                where: {
+                    quotationId,
+                    revisionNumber: latestRevisionNumber,
+                    quotationRevisionStatus: "REVISION_REQUESTED"
                 },
                 data:{
                     quotationRevisionStatus:"SUPERSEDED"
                 }
             })
+
+
+            if(result.count==0){
+                throw new ApiError(409,"There is no revision requested or is already handled by another salesperson");
+            }
 
             const newRevisionNumber = latestRevisionNumber + 1;
 
@@ -454,18 +458,24 @@ export const QuotationService = {
                     sgstAmount: latestRevision.sgstAmount,
                     igstRate: latestRevision.igstRate,
                     igstAmount: latestRevision.igstAmount,
-                    grandTotal: latestRevision.grandTotal
+                    grandTotal: latestRevision.grandTotal,
+                    items: {
+                        create: latestRevision.items.map((item) => {
+                            const { id, quotationRevisionId, ...itemData } = item;
+
+                            return itemData;
+                        })
+                    }
                 },
                 include:{
                     items:true
                 }
             });
 
-
             return newRevision;
         });
     },
-    acceptRevision:async(params:TeditQuotationRevision["params"])=>{
+    acceptRevision:async(params:TrevisionIdParams["params"])=>{
         const {revisionId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -493,19 +503,21 @@ export const QuotationService = {
                 include:{
                     quotation:{
                         select:{
-                            inquiryId:true
+                            inquiryId:true,
+                            quotationNumber:true
                         }
                     }
                 }
             })
 
             const inquiryId = revision?.quotation?.inquiryId;
+            const quotationNumber=revision?.quotation?.quotationNumber;
 
             if(!inquiryId){
                 throw new ApiError(404,"Can't find associated inquiry for revision");
             }
 
-            return await tx.inquiry.update({
+            await tx.inquiry.update({
                 where:{
                     id: inquiryId
                 },
@@ -516,9 +528,24 @@ export const QuotationService = {
                     quotation:true
                 }
             })
+            
+            if(!quotationNumber){
+                throw new ApiError(404,"Can't find quotation for the associated revision")
+            }
+
+            await tx.inquiryActivity.create({
+                data:{
+                    inquiryId,
+                    salespersonId:1,
+                    activityType:"STATUS_CHANGED",
+                    note:`Inquiry close because quotation ${quotationNumber} was accepted`
+                }
+            })
+
+            return {};
         })
     },
-    rejectRevision:async(params:TeditQuotationRevision["params"])=>{
+    rejectRevision:async(params:TrevisionIdParams["params"])=>{
         const {revisionId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -546,19 +573,21 @@ export const QuotationService = {
                 include:{
                     quotation:{
                         select:{
-                            inquiryId:true
+                            inquiryId:true,
+                            quotationNumber:true
                         }
                     }
                 }
             })
 
             const inquiryId = revision?.quotation?.inquiryId;
+            const quotationNumber=revision?.quotation?.quotationNumber;
 
             if(!inquiryId){
                 throw new ApiError(404,"Can't find associated inquiry for revision");
             }
 
-            return await tx.inquiry.update({
+            await tx.inquiry.update({
                 where:{
                     id: inquiryId
                 },
@@ -569,6 +598,21 @@ export const QuotationService = {
                     quotation:true
                 }
             })
+
+            if(!quotationNumber){
+                throw new ApiError(404,"Can't find quotation for the associated revision")
+            }
+
+            await tx.inquiryActivity.create({
+                data:{
+                    inquiryId,
+                    salespersonId:1,
+                    activityType:"STATUS_CHANGED",
+                    note:`Inquiry close because quotation ${quotationNumber} was accepted`
+                }
+            })
+
+            return {};
         })
     }
 };

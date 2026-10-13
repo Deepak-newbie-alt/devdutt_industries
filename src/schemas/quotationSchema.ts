@@ -32,6 +32,46 @@ const validUntilSchema = z.coerce
     "Expiry date cannot be in the past"
   );
 
+  type TaxRates = {
+    cgstRate?: string | null | undefined;
+    sgstRate?: string | null | undefined;
+    igstRate?: string | null | undefined;
+};
+
+const validateTaxRates = (data: TaxRates, ctx: z.RefinementCtx) => {
+    const hasCgst = data.cgstRate != undefined;
+    const hasSgst = data.sgstRate != undefined;
+    const hasIgst = data.igstRate != undefined;
+
+    if (hasCgst !== hasSgst) {
+        ctx.addIssue({
+            code: "custom",
+            message: "CGST and SGST must be provided together",
+            path: ["cgstRate"],
+        });
+    }
+
+    if (hasCgst && hasIgst) {
+        ctx.addIssue({
+            code: "custom",
+            message: "Can't apply both intra-state and inter-state tax",
+            path: ["igstRate"],
+        });
+    }
+};
+
+export const revisionIdParamsSchema=z.object({
+    params:z.object({
+        revisionId:z
+        .coerce 
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TrevisionIdParams=z.infer<typeof revisionIdParamsSchema>;
+
 const quotationItemSchema = z.object({
     name: z
         .string()
@@ -161,48 +201,7 @@ export const createQuotationSchema = z.object({
     body:quotationRevisionBodySchema.omit({
         quotationRevisionStatus:true,
         pdfUrl:true
-    }).superRefine((data, ctx) => {
-        const hasCgst = data.cgstRate != undefined;
-        const hasSgst = data.sgstRate != undefined;
-        const hasIgst = data.igstRate != undefined;
-
-        if (hasCgst !== hasSgst) {
-            ctx.addIssue({
-                code: "custom",
-                message: "CGST and SGST must be provided together",
-                path: ["cgstRate"]
-            });
-        }
-
-        if (hasCgst && hasIgst) {
-            ctx.addIssue({
-                code: "custom",
-                message: "Can't apply both intra-state and inter-state tax",
-                path: ["igstRate"]
-            });
-        }
-
-        // PDF is not allowed for drafts
-        // if (data.quotationRevisionStatus === "DRAFT" && data.pdfUrl !== undefined) {
-        //     ctx.addIssue({
-        //         code: "custom",
-        //         message: "PDF URL must not be provided for a draft quotation",
-        //         path: ["pdfUrl"]
-        //     });
-        // }
-
-        // PDF is required for non-draft quotations
-        // if (
-        //     data.quotationRevisionStatus !== "DRAFT" &&
-        //     data.pdfUrl === undefined
-        // ) {
-        //     ctx.addIssue({
-        //         code: "custom",
-        //         message: "PDF URL is required when quotation is not a draft",
-        //         path: ["pdfUrl"]
-        //     });
-        // }
-    }),
+    }).superRefine(validateTaxRates),
     params:z.object({
             inquiryId:z
             .coerce
@@ -220,13 +219,7 @@ export const sendQuotationSchema=z.object({
         .url("Please provide an valid url")
     }),
 
-    params:z.object({
-        revisionId:z
-        .coerce 
-        .number()
-        .int("Id must be an integer")
-        .positive("Id must be positive")
-    })
+    params:revisionIdParamsSchema.shape.params
 })
 
 export type TsendQuotation=z.infer<typeof sendQuotationSchema>;
@@ -237,12 +230,12 @@ export const editQuotationSchema=z.object({
         salespersonId:true,
         quotationRevisionStatus:true,
         pdfUrl:true
-    })
+    }).superRefine(validateTaxRates)
 })
 
 export type TeditQuotationRevision=z.infer<typeof editQuotationSchema>;
 
-export const getQuotationRevisionParamsSchema=z.object({
+export const quotationIdParamsSchema=z.object({
     params:z.object({
         quotationId:z
         .coerce
@@ -252,11 +245,4 @@ export const getQuotationRevisionParamsSchema=z.object({
     })
 })
 
-export type TgetQuotationRevisionParams=z.infer<typeof getQuotationRevisionParamsSchema>;
-
-export const createRevisionSchema=z.object({
-    params:getQuotationRevisionParamsSchema.shape.params,
-    body:editQuotationSchema.shape.body
-})
-
-export type TcreateRevision=z.infer<typeof createRevisionSchema>;
+export type TquotationIdParams=z.infer<typeof quotationIdParamsSchema>;
