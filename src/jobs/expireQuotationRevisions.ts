@@ -1,15 +1,16 @@
 
 import cron from "node-cron";
 import prisma from "../lib/prisma.js";
+import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
 
 export const expireQuotationRevisions = async () => {
-    const now = new Date(new Date().setHours(0,0,0,0));
+    const now = getTodayInIndiaDbDate();
 
     const result = await prisma.quotationRevision.updateMany({
         where: {
             quotationRevisionStatus: "SENT",
             validUntil: {
-                lte: now,
+                lt: now,
             },
         },
         data: {

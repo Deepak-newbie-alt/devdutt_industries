@@ -9,6 +9,7 @@ import type {
     TsendQuotation
 } from "../schemas/quotationSchema.js";
 import ApiError from "../utils/ApiError.js";
+import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
 
 export const QuotationService = {
 
@@ -21,6 +22,20 @@ export const QuotationService = {
 
             const { inquiryId } = params;
             const year = new Date().getFullYear();
+
+
+            const inquiry=await tx.inquiry.findUnique({
+                where:{
+                    id:inquiryId
+                },
+                select:{
+                    status:true
+                }
+            })
+
+            if(inquiry?.status!=="IN_PROGRESS"){
+                throw new ApiError(400,"Invalid inquiry status")
+            }
 
             // Generate yearly sequential quotation number
             const counter = await tx.quotationNumberCounter.upsert({
@@ -70,17 +85,20 @@ export const QuotationService = {
             if (cgstRate !== null && sgstRate !== null) {
                 cgstAmount = taxableAmount
                     .mul(cgstRate)
-                    .div(100);
+                    .div(100)
+                    .toDecimalPlaces(2);
 
                 sgstAmount = taxableAmount
                     .mul(sgstRate)
-                    .div(100);
+                    .div(100)
+                    .toDecimalPlaces(2);
             }
 
             if (igstRate !== null) {
                 igstAmount = taxableAmount
                     .mul(igstRate)
-                    .div(100);
+                    .div(100)
+                    .toDecimalPlaces(2);
             }
 
             const grandTotal = taxableAmount
@@ -177,7 +195,10 @@ export const QuotationService = {
             const revision=await tx.quotationRevision.update({
                 where:{
                     id:params.revisionId,
-                    quotationRevisionStatus:"DRAFT"
+                    quotationRevisionStatus:"DRAFT",
+                    validUntil:{
+                        gte:getTodayInIndiaDbDate()
+                    }
                 },
                 data:{
                     quotationRevisionStatus:"SENT",
@@ -255,17 +276,17 @@ export const QuotationService = {
 
         const cgstAmount =
             cgst !== null
-                ? taxableAmount.mul(cgst).div(100)
+                ? taxableAmount.mul(cgst).div(100).toDecimalPlaces(2)
                 : null;
 
         const sgstAmount =
             sgst !== null
-                ? taxableAmount.mul(sgst).div(100)
+                ? taxableAmount.mul(sgst).div(100).toDecimalPlaces(2)
                 : null;
 
         const igstAmount =
             igst !== null
-                ? taxableAmount.mul(igst).div(100)
+                ? taxableAmount.mul(igst).div(100).toDecimalPlaces(2)
                 : null;
 
         const grandTotal = taxableAmount
@@ -364,7 +385,10 @@ export const QuotationService = {
         const revision=await prisma.quotationRevision.updateMany({
             where:{
                     id:revisionId,
-                    quotationRevisionStatus:"SENT"
+                    quotationRevisionStatus:"SENT",
+                    validUntil:{
+                        gte:getTodayInIndiaDbDate()
+                    }
                 },
                 data:{
                     quotationRevisionStatus:"REVISION_REQUESTED",
@@ -375,7 +399,7 @@ export const QuotationService = {
             throw new ApiError(409,"Only sent quotations can have revision requests")
         }
 
-        return {};
+        return revision;
     },
     createRevision:async(params:TquotationIdParams["params"])=>{
         const {quotationId}=params;
@@ -484,7 +508,7 @@ export const QuotationService = {
                     id:revisionId,
                     quotationRevisionStatus:"SENT",
                     validUntil:{
-                        gt: new Date(new Date().setHours(0, 0, 0, 0))
+                        gte: getTodayInIndiaDbDate()
                     }
                 },
                 data:{
@@ -542,7 +566,12 @@ export const QuotationService = {
                 }
             })
 
-            return {};
+            return {
+                revisionId,
+                quotationRevisionStatus: "ACCEPTED",
+                inquiryId,
+                inquiryStatus: "CLOSED"
+            };
         })
     },
     rejectRevision:async(params:TrevisionIdParams["params"])=>{
@@ -554,7 +583,7 @@ export const QuotationService = {
                     id:revisionId,
                     quotationRevisionStatus:"SENT",
                     validUntil:{
-                        gt: new Date(new Date().setHours(0, 0, 0, 0))
+                        gte: getTodayInIndiaDbDate()
                     }
                 },
                 data:{
@@ -562,7 +591,7 @@ export const QuotationService = {
                 }
             })
 
-            if(result.count==0){
+            if(result.count===0){
                 throw new ApiError(404,"Can't find revision or invalid revision status");
             }
 
@@ -608,11 +637,16 @@ export const QuotationService = {
                     inquiryId,
                     salespersonId:1,
                     activityType:"STATUS_CHANGED",
-                    note:`Inquiry close because quotation ${quotationNumber} was accepted`
+                    note:`Inquiry close because quotation ${quotationNumber} was rejected`
                 }
             })
 
-            return {};
+            return {
+                revisionId,
+                quotationRevisionStatus: "REJECTED",
+                inquiryId,
+                inquiryStatus: "CLOSED"
+            };
         })
     }
 };

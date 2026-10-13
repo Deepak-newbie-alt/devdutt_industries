@@ -46,7 +46,7 @@ export const requestRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(asy
     const data=await QuotationService.requestRevision(req.validated.params);
 
     res.status(200).json(
-        new ApiResponse(204,"Revision requested successfully",data)
+        new ApiResponse(200,"Revision requested successfully",data)
     )
     return;
 })
@@ -63,8 +63,8 @@ export const createRevision=catchAsync<ValidatedRequest<TquotationIdParams>>(asy
 export const acceptRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
     const data=await QuotationService.acceptRevision(req.validated.params);
 
-    res.status(204).json(
-        new ApiResponse(204,"Revision accepted, Inquiry closed",data)
+    res.status(200).json(
+        new ApiResponse(200,"Revision accepted, Inquiry closed",data)
     )
     return;
 })
@@ -72,8 +72,8 @@ export const acceptRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(asyn
 export const rejectRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
     const data=await QuotationService.rejectRevision(req.validated.params);
 
-    res.status(204).json(
-        new ApiResponse(204,"Revision rejected, Inquiry closed",data)
+    res.status(200).json(
+        new ApiResponse(200,"Revision rejected, Inquiry closed",data)
     )
     return;
 })

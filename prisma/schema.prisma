@@ -221,7 +221,7 @@ model QuotationRevision {
   machineSpecifications Json
 
   terms         Json
-  validUntil    DateTime
+  validUntil    DateTime @db.Date
   pdfUrl        String?
   salespersonId Int
   salesperson   User     @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
