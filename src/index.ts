@@ -7,6 +7,7 @@ import productBrochureRoutes from "./routes/product.brochures.routes.js";
 import inquiryRoutes from "./routes/inquiry.routes.js";
 import quotationRoutes from "./routes/quotation.routes.js";
 import userRoutes from "./routes/users.routes.js";
+import orderRoutes from "./routes/order.routes.js";
 
 //jobs
 import {startQuotationExpiryJob} from "./jobs/expireQuotationRevisions.js"
@@ -28,6 +29,7 @@ app.use("/api/v1/product/brochure",productBrochureRoutes);
 app.use("/api/v1/inquiries",inquiryRoutes);
 app.use("/api/v1/quotations",quotationRoutes);
 app.use("/api/v1/users",userRoutes);
+app.use("/api/v1/orders",orderRoutes);
 
 app.use(errorHandler);
 

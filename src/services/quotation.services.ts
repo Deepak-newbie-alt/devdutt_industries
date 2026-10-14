@@ -21,20 +21,33 @@ export const QuotationService = {
         return await prisma.$transaction(async (tx) => {
 
             const { inquiryId } = params;
-            const year = new Date().getFullYear();
-
+            const year = Number(
+                new Intl.DateTimeFormat("en-US", {
+                    timeZone: "Asia/Kolkata",
+                    year: "numeric"
+                }).format(new Date())
+            );
 
             const inquiry=await tx.inquiry.findUnique({
                 where:{
                     id:inquiryId
                 },
                 select:{
-                    status:true
+                    status:true,
+                    salespersonId:true
                 }
             })
 
-            if(inquiry?.status!=="IN_PROGRESS"){
+            if(!inquiry){
+                throw new ApiError(404,"Inquiry not found");
+            }
+
+            if(inquiry.status!=="IN_PROGRESS"){
                 throw new ApiError(400,"Invalid inquiry status")
+            }
+
+            if(inquiry.salespersonId!==body.salespersonId){
+                throw new ApiError(403,"Inquiry is assigned to a different salesperson")
             }
 
             // Generate yearly sequential quotation number
@@ -374,6 +387,9 @@ export const QuotationService = {
                     }
                 },
                 items:true
+            },
+            orderBy:{
+                revisionNumber:"asc"
             }
         })
 
@@ -399,7 +415,10 @@ export const QuotationService = {
             throw new ApiError(409,"Only sent quotations can have revision requests")
         }
 
-        return revision;
+        return {
+            revisionId,
+            quotationRevisionStatus: "REVISION_REQUESTED"
+        };
     },
     createRevision:async(params:TquotationIdParams["params"])=>{
         const {quotationId}=params;

@@ -64,6 +64,15 @@ enum QuotationRevisionStatus {
   EXPIRED
 }
 
+enum OrderStatus {
+  CONFIRMED
+  IN_PRODUCTION
+  READY
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
 model User {
   id              Int                 @id @default(autoincrement())
   name            String
@@ -241,6 +250,8 @@ model QuotationRevision {
   grandTotal Decimal @db.Decimal(12, 2)
   currency   String  @default("INR") @db.VarChar(3)
 
+  order Order?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -270,4 +281,46 @@ model QuotationNumberCounter {
   lastNumber Int
 
   @@map("quotationnumbercounters")
+}
+
+model Order {
+  id          Int    @id @default(autoincrement())
+  orderNumber String @unique @db.VarChar(50)
+
+  quotationRevisionId Int               @unique
+  quotationRevision   QuotationRevision @relation(fields: [quotationRevisionId], references: [id], onDelete: Restrict)
+
+  status OrderStatus @default(CONFIRMED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  name        String  @db.VarChar(100)
+  description String
+  quantity    Int
+  unit        Unit
+  unitPrice   Decimal @db.Decimal(12, 2)
+  amount      Decimal @db.Decimal(12, 2)
+
+  displayOrder Int @default(0)
+
+  @@map("orderitems")
+}
+
+model OrderNumberCounter {
+  year       Int @id
+  lastNumber Int
+
+  @@map("ordernumbercounters")
 }
