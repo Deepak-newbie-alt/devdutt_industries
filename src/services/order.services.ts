@@ -1,19 +1,18 @@
 
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
-import type { TorderIdParams, TviewOrdersQuery } from "../schemas/orderSchema.js";
-import type { TrevisionIdBody } from "../schemas/quotationSchema.js";
+import type { TorderIdParams, TorderStatusTransition, TviewOrdersQuery, TyourOrderBody } from "../schemas/orderSchema.js";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDateString } from "../utils/dateOnly.js";
 
 export const OrderService = {
-    createOrder: async (body: TrevisionIdBody["body"]) => {
-        const { revisionId } = body;
+    createOrder: async (body: TyourOrderBody["body"]) => {
+        const { quotationRevisionId } = body;
 
         return prisma.$transaction(async (tx) => {
             const revision = await tx.quotationRevision.findUnique({
                 where: {
-                    id: revisionId,
+                    id: quotationRevisionId,
                 },
                 include: {
                     items: true,
@@ -53,7 +52,7 @@ export const OrderService = {
             const order = await tx.order.create({
                 data: {
                     orderNumber,
-                    quotationRevisionId: revisionId,
+                    quotationRevisionId,
                     status: "CONFIRMED",
                     items: {
                         create: revision.items.map((item) => ({
@@ -139,5 +138,54 @@ export const OrderService = {
         }
 
         return order;
+    },
+    changeOrderStatus:async(params:TorderStatusTransition["params"],body:TorderStatusTransition["body"])=>{
+        const {orderId}=params;
+        const {status}=body;
+
+        return await prisma.$transaction(async(tx)=>{
+            const order=await tx.order.findUnique({
+                where:{
+                    id:orderId
+                }
+            })
+
+            if(!order){
+                throw new ApiError(404,"Order not found");
+            }
+
+            if(order.status==="DELIVERED" || order.status==="CANCELLED"){
+                throw new ApiError(409,`Can't change status for this order its already ${order.status}`);
+            }
+
+            const isValidTransition =
+                (order.status === "CONFIRMED" &&
+                    (status === "IN_PRODUCTION" || status === "CANCELLED")) ||
+                (order.status === "IN_PRODUCTION" && status === "READY") ||
+                (order.status === "READY" && status === "DISPATCHED") ||
+                (order.status === "DISPATCHED" && status === "DELIVERED");
+
+            if (!isValidTransition) {
+                throw new ApiError(409, "Invalid status transition");
+            }
+
+            const result=await tx.order.updateMany({
+                where: {
+                    id: orderId,
+                    status: order.status
+                },
+                data: { status },
+            });
+
+            if(result.count==0){
+                throw new ApiError(409,"Couldn't change status please refresh and try again");
+            }
+
+            return tx.order.findUniqueOrThrow({
+                where:{
+                    id:orderId
+                }
+            })
+        })
     }
 };

@@ -1,13 +1,12 @@
 import type { Response } from "express";
-import type { TrevisionIdBody } from "../schemas/quotationSchema.js";
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { OrderService } from "../services/order.services.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import type { TorderIdParams, TviewOrdersQuery } from "../schemas/orderSchema.js";
+import type { TorderIdParams, TorderStatusTransition, TviewOrdersQuery, TyourOrderBody } from "../schemas/orderSchema.js";
 
 
-export const createOrder=catchAsync<ValidatedRequest<TrevisionIdBody>>(async(req,res:Response)=>{
+export const createOrder=catchAsync<ValidatedRequest<TyourOrderBody>>(async(req,res:Response)=>{
     const data=await OrderService.createOrder(req.validated.body);
 
     res.status(201).json(
@@ -30,6 +29,15 @@ export const viewOrdersById=catchAsync<ValidatedRequest<TorderIdParams>>(async(r
 
     res.status(200).json(
         new ApiResponse(200,"Order fetched by id",data)
+    )
+    return;
+})
+
+export const changeOrderStatus=catchAsync<ValidatedRequest<TorderStatusTransition>>(async(req,res:Response)=>{
+    const data=await OrderService.changeOrderStatus(req.validated.params,req.validated.body);
+
+    res.status(200).json(
+        new ApiResponse(200,"Order status changed successfully",data)
     )
     return;
 })

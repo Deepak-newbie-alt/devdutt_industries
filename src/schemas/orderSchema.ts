@@ -1,5 +1,7 @@
 import z from "zod";
 
+const orderStatus=["IN_PRODUCTION","CANCELLED","READY","DISPATCHED","DELIVERED"];
+
 export const viewOrdersQuerySchema=z.object({
     query:z.object({
             page:z
@@ -39,3 +41,26 @@ export const orderIdParamsSchema=z.object({
 })
 
 export type TorderIdParams=z.infer<typeof orderIdParamsSchema>;
+
+export const yourOrderBodySchema=z.object({
+    body:z.object({
+        quotationRevisionId:z
+        .coerce
+        .number()
+        .int("Id must be integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TyourOrderBody=z.infer<typeof yourOrderBodySchema>;
+
+export const orderStatusTransitionSchema=z.object({
+    body:z.object({
+        status:z
+        .enum(orderStatus,"Please provide a valid order status")
+    }),
+
+    params:orderIdParamsSchema.shape.params
+})
+
+export type TorderStatusTransition=z.infer<typeof orderStatusTransitionSchema>;
