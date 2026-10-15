@@ -262,3 +262,15 @@ export const quotationIdParamsSchema=z.object({
 })
 
 export type TquotationIdParams=z.infer<typeof quotationIdParamsSchema>;
+
+export const revisionIdBodySchema=z.object({
+    body:z.object({
+        revisionId:z
+        .coerce
+        .number()
+        .int("Id must be integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TrevisionIdBody=z.infer<typeof revisionIdBodySchema>;
