@@ -3,7 +3,7 @@ import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { OrderService } from "../services/order.services.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import type { TorderIdParams, TorderStatusTransition, TviewOrdersQuery, TyourOrderBody } from "../schemas/orderSchema.js";
+import type { TorderActivityAddNote, TorderIdParams, TorderStatusTransition, TviewOrdersQuery, TyourOrderBody } from "../schemas/orderSchema.js";
 
 
 export const createOrder=catchAsync<ValidatedRequest<TyourOrderBody>>(async(req,res:Response)=>{
@@ -38,6 +38,15 @@ export const changeOrderStatus=catchAsync<ValidatedRequest<TorderStatusTransitio
 
     res.status(200).json(
         new ApiResponse(200,"Order status changed successfully",data)
+    )
+    return;
+})
+
+export const addNote=catchAsync<ValidatedRequest<TorderActivityAddNote>>(async(req,res:Response)=>{
+    const data=await OrderService.addNote(req.validated.params,req.validated.body);
+
+    res.status(200).json(
+        new ApiResponse(200,"Note added",data)
     )
     return;
 })

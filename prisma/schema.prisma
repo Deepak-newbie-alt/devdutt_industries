@@ -85,6 +85,7 @@ model User {
   inquiryActivity InquiryActivity[]
   quotations      Quotation[]
   revisions       QuotationRevision[]
+  orderActivities OrderActivity[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
@@ -297,6 +298,8 @@ model Order {
 
   items OrderItem[]
 
+  activities OrderActivity[]
+
   @@map("orders")
 }
 
@@ -323,4 +326,29 @@ model OrderNumberCounter {
   lastNumber Int
 
   @@map("ordernumbercounters")
+}
+
+enum OrderActivityType {
+  CREATED
+  STATUS_CHANGED
+  NOTE_ADDED
+}
+
+model OrderActivity {
+  id Int @id @default(autoincrement())
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  activityType   OrderActivityType
+  previousStatus OrderStatus?
+  newStatus      OrderStatus?
+  note           String?
+  createdAt      DateTime          @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("orderactivities")
 }

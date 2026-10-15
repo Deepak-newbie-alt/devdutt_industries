@@ -1,13 +1,13 @@
 
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
-import type { TorderIdParams, TorderStatusTransition, TviewOrdersQuery, TyourOrderBody } from "../schemas/orderSchema.js";
+import type { TorderActivityAddNote, TorderIdParams, TorderStatusTransition, TviewOrdersQuery, TyourOrderBody } from "../schemas/orderSchema.js";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDateString } from "../utils/dateOnly.js";
 
 export const OrderService = {
     createOrder: async (body: TyourOrderBody["body"]) => {
-        const { quotationRevisionId } = body;
+        const { quotationRevisionId,userId } = body;
 
         return prisma.$transaction(async (tx) => {
             const revision = await tx.quotationRevision.findUnique({
@@ -68,8 +68,19 @@ export const OrderService = {
                 },
                 include: {
                     items: true,
+                    activities:true
                 },
             });
+
+            await tx.orderActivity.create({
+                data:{
+                    orderId:order.id,
+                    userId,
+                    activityType:"CREATED",
+                    newStatus:"CONFIRMED",
+                    note:"Order confirmed"
+                }
+            })
 
             return order;
         });
@@ -141,7 +152,7 @@ export const OrderService = {
     },
     changeOrderStatus:async(params:TorderStatusTransition["params"],body:TorderStatusTransition["body"])=>{
         const {orderId}=params;
-        const {status}=body;
+        const {status,userId}=body;
 
         return await prisma.$transaction(async(tx)=>{
             const order=await tx.order.findUnique({
@@ -181,11 +192,49 @@ export const OrderService = {
                 throw new ApiError(409,"Couldn't change status please refresh and try again");
             }
 
+            await tx.orderActivity.create({
+                data:{
+                    orderId,
+                    userId,
+                    activityType:"STATUS_CHANGED",
+                    previousStatus:order.status,
+                    newStatus:status,
+                    note:"Status changed"
+                }
+            })
+
             return tx.order.findUniqueOrThrow({
                 where:{
                     id:orderId
+                },
+                include:{
+                    items:true,
+                    activities:true
                 }
             })
+        })
+    },
+    addNote:async(params:TorderActivityAddNote["params"],body:TorderActivityAddNote["body"])=>{
+        const {orderId}=params;
+        const {userId,note}=body;
+
+        const order=await prisma.order.findUnique({
+            where:{
+                id:orderId
+            }
+        })
+
+        if(!order){
+            throw new ApiError(404,"Order not found");
+        }
+
+        return await prisma.orderActivity.create({
+            data:{
+                orderId,
+                userId,
+                activityType:"NOTE_ADDED",
+                note
+            }
         })
     }
 };
