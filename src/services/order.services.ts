@@ -65,11 +65,7 @@ export const OrderService = {
                             displayOrder:item.displayOrder
                         })),
                     },
-                },
-                include: {
-                    items: true,
-                    activities:true
-                },
+                }
             });
 
             await tx.orderActivity.create({
@@ -82,7 +78,19 @@ export const OrderService = {
                 }
             })
 
-            return order;
+            return tx.order.findUniqueOrThrow({
+                where:{
+                    id:order.id
+                },
+                include:{
+                    items:true,
+                    activities:{
+                        orderBy:{
+                            createdAt:"asc"
+                        }
+                    }
+                }
+            });
         });
     },
     viewOrders:async(query:TviewOrdersQuery["query"])=>{
@@ -234,6 +242,28 @@ export const OrderService = {
                 userId,
                 activityType:"NOTE_ADDED",
                 note
+            }
+        })
+    },
+    viewActivities:async(params:TorderIdParams["params"])=>{
+        const {orderId}=params;
+
+        const order=await prisma.order.findUnique({
+            where:{
+                id:orderId
+            }
+        })
+
+        if(!order){
+            throw new ApiError(404,"Order not found");
+        }
+
+        return prisma.orderActivity.findMany({
+            where:{
+                orderId
+            },
+            orderBy:{
+                createdAt:"asc"
             }
         })
     }

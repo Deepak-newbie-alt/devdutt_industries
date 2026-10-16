@@ -50,3 +50,12 @@ export const addNote=catchAsync<ValidatedRequest<TorderActivityAddNote>>(async(r
     )
     return;
 })
+
+export const viewActivities=catchAsync<ValidatedRequest<TorderIdParams>>(async(req,res:Response)=>{
+    const data=await OrderService.viewActivities(req.validated.params);
+
+    res.status(200).json(
+        new ApiResponse(200,"Order activity lifecycle",data)
+    )
+    return;
+})
