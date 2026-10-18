@@ -13,10 +13,12 @@ import orderRoutes from "./routes/order.routes.js";
 import {startQuotationExpiryJob} from "./jobs/expireQuotationRevisions.js"
 
 import { errorHandler } from "./middlewares/errorMiddleware.js";
+import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
 
 app.use(express.json());
+app.use(clerkMiddleware());
 
 const PORT = process.env.PORT || 8000;
 
