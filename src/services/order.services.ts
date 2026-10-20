@@ -6,8 +6,8 @@ import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDateString } from "../utils/dateOnly.js";
 
 export const OrderService = {
-    createOrder: async (body: TyourOrderBody["body"]) => {
-        const { quotationRevisionId,userId } = body;
+    createOrder: async (body: TyourOrderBody["body"],userId:number) => {
+        const { quotationRevisionId } = body;
 
         return prisma.$transaction(async (tx) => {
             const revision = await tx.quotationRevision.findUnique({
@@ -158,9 +158,9 @@ export const OrderService = {
 
         return order;
     },
-    changeOrderStatus:async(params:TorderStatusTransition["params"],body:TorderStatusTransition["body"])=>{
+    changeOrderStatus:async(params:TorderStatusTransition["params"],body:TorderStatusTransition["body"],userId:number)=>{
         const {orderId}=params;
-        const {status,userId}=body;
+        const {status}=body;
 
         return await prisma.$transaction(async(tx)=>{
             const order=await tx.order.findUnique({
@@ -222,9 +222,9 @@ export const OrderService = {
             })
         })
     },
-    addNote:async(params:TorderActivityAddNote["params"],body:TorderActivityAddNote["body"])=>{
+    addNote:async(params:TorderActivityAddNote["params"],body:TorderActivityAddNote["body"],userId:number)=>{
         const {orderId}=params;
-        const {userId,note}=body;
+        const {note}=body;
 
         const order=await prisma.order.findUnique({
             where:{

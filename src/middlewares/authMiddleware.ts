@@ -46,7 +46,7 @@ export const isSalesperson=async(req:Request,res:Response,next:NextFunction)=>{
     }
 
     if(user.status!=="ACTIVE"){
-        throw new ApiError(403,"user is inactive");
+        throw new ApiError(403,"User is inactive");
     }
 
 

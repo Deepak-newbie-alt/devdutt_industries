@@ -49,13 +49,6 @@ export const yourOrderBodySchema=z.object({
         .number()
         .int("Id must be integer")
         .positive("Id must be positive"),
-        //temp
-        userId:z
-        .coerce
-        .number()
-        .int("Id must be integer")
-        .positive("Id must be positive")
-
     })
 })
 
@@ -65,12 +58,6 @@ export const orderStatusTransitionSchema=z.object({
     body:z.object({
         status:z
         .enum(orderStatus,"Please provide a valid order status"),
-        //temp
-        userId:z
-        .coerce
-        .number()
-        .int("Id must be integer")
-        .positive("Id must be positive")
     }),
 
     params:orderIdParamsSchema.shape.params
@@ -80,12 +67,6 @@ export type TorderStatusTransition=z.infer<typeof orderStatusTransitionSchema>;
 
 export const orderActivityAddNoteSchema=z.object({
     body:z.object({
-        //temp
-        userId:z
-        .coerce
-        .number()
-        .int("Id must be integer")
-        .positive("Id must be positive"),
         note:z
         .string()
         .trim()

@@ -35,7 +35,7 @@ export const getInquiryById=catchAsync<ValidatedRequest<TgetInquiryParams>>(asyn
 })
 
 export const claimInquiry=catchAsync<ValidatedRequest<TclaimInquiry>>(async(req,res:Response)=>{
-    const data=await InquiryService.claimInquiry(req.validated.body,req.validated.params);
+    const data=await InquiryService.claimInquiry(req.validated.params,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,'Inquiry claimed successfully',data)
@@ -44,7 +44,7 @@ export const claimInquiry=catchAsync<ValidatedRequest<TclaimInquiry>>(async(req,
 })
 
 export const contactCustomer=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
-    const data=await InquiryService.contactCustomer(req.validated.params,req.validated.body);
+    const data=await InquiryService.contactCustomer(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(201).json(
         new ApiResponse(201,"Customer contacted",data)
@@ -54,7 +54,7 @@ export const contactCustomer=catchAsync<ValidatedRequest<TinquiryActivity>>(asyn
 })
 
 export const addNote=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
-    const data=await InquiryService.addNote(req.validated.params,req.validated.body);
+    const data=await InquiryService.addNote(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(201).json(
         new ApiResponse(201,"Added a note",data)
@@ -63,7 +63,7 @@ export const addNote=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,re
 })
 
 export const closeInquiry=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
-    const data=await InquiryService.closeInquiry(req.validated.params,req.validated.body);
+    const data=await InquiryService.closeInquiry(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(201).json(
         new ApiResponse(201,"Inquiry closed",data)

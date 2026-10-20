@@ -15,7 +15,8 @@ export const QuotationService = {
 
     createQuotation: async (
         params: TcreateQuotation["params"],
-        body: TcreateQuotation["body"]
+        body: TcreateQuotation["body"],
+        salespersonId:number
     ) => {
 
         return await prisma.$transaction(async (tx) => {
@@ -46,7 +47,7 @@ export const QuotationService = {
                 throw new ApiError(400,"Invalid inquiry status")
             }
 
-            if(inquiry.salespersonId!==body.salespersonId){
+            if(inquiry.salespersonId!==salespersonId){
                 throw new ApiError(403,"Inquiry is assigned to a different salesperson")
             }
 
@@ -123,7 +124,7 @@ export const QuotationService = {
             const quotation = await tx.quotation.create({
                 data: {
                     inquiryId,
-                    salespersonId: body.salespersonId,
+                    salespersonId,
                     quotationNumber
                 }
             });
@@ -149,7 +150,7 @@ export const QuotationService = {
 
                     validUntil: body.validUntil ?? null,
 
-                    salespersonId: body.salespersonId,
+                    salespersonId,
 
                     taxableAmount,
 
@@ -420,7 +421,7 @@ export const QuotationService = {
             quotationRevisionStatus: "REVISION_REQUESTED"
         };
     },
-    createRevision:async(params:TquotationIdParams["params"])=>{
+    createRevision:async(params:TquotationIdParams["params"],salespersonId:number)=>{
         const {quotationId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -493,7 +494,7 @@ export const QuotationService = {
                     machineSpecifications: latestRevision.machineSpecifications as Prisma.InputJsonObject,
                     terms: latestRevision.terms as Prisma.InputJsonObject,
                     validUntil: latestRevision.validUntil,
-                    salespersonId: latestRevision.salespersonId,
+                    salespersonId,
                     taxableAmount: latestRevision.taxableAmount,
                     cgstRate: latestRevision.cgstRate,
                     cgstAmount: latestRevision.cgstAmount,
@@ -518,7 +519,7 @@ export const QuotationService = {
             return newRevision;
         });
     },
-    acceptRevision:async(params:TrevisionIdParams["params"])=>{
+    acceptRevision:async(params:TrevisionIdParams["params"],salespersonId:number)=>{
         const {revisionId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -579,7 +580,7 @@ export const QuotationService = {
             await tx.inquiryActivity.create({
                 data:{
                     inquiryId,
-                    salespersonId:1,
+                    salespersonId,
                     activityType:"STATUS_CHANGED",
                     note:`Inquiry close because quotation ${quotationNumber} was accepted`
                 }
@@ -593,7 +594,7 @@ export const QuotationService = {
             };
         })
     },
-    rejectRevision:async(params:TrevisionIdParams["params"])=>{
+    rejectRevision:async(params:TrevisionIdParams["params"],salespersonId:number)=>{
         const {revisionId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -654,7 +655,7 @@ export const QuotationService = {
             await tx.inquiryActivity.create({
                 data:{
                     inquiryId,
-                    salespersonId:1,
+                    salespersonId,
                     activityType:"STATUS_CHANGED",
                     note:`Inquiry close because quotation ${quotationNumber} was rejected`
                 }

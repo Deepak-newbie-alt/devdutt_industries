@@ -69,7 +69,7 @@ export const InquiryService={
         
         return inquiry;
     },
-    claimInquiry:async(body:TclaimInquiry["body"],params:TclaimInquiry["params"])=>{
+    claimInquiry:async(params:TclaimInquiry["params"],salespersonId:number)=>{
         const {inquiryId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -81,7 +81,7 @@ export const InquiryService={
             },
             data:{
                 status:"IN_PROGRESS",
-                salespersonId:body.salespersonId
+                salespersonId
             }
         })
 
@@ -98,7 +98,7 @@ export const InquiryService={
         const activity=await tx.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
-                salespersonId:body.salespersonId,
+                salespersonId,
                 activityType:"CLAIMED"
             }
         })
@@ -106,13 +106,13 @@ export const InquiryService={
         return {inquiry,activity};
         })
     },
-    contactCustomer:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"])=>{
+    contactCustomer:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"],salespersonId:number)=>{
         const {inquiryId}=params;
-        const {salespersonId,note}=body;
+        const {note}=body;
         const activity=await prisma.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
-                salespersonId:salespersonId,
+                salespersonId,
                 activityType:"CUSTOMER_CONTACTED",
                 note:note
             }
@@ -120,13 +120,13 @@ export const InquiryService={
 
         return activity;
     },
-    addNote:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"])=>{
+    addNote:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"],salespersonId:number)=>{
         const {inquiryId}=params;
-        const {salespersonId,note}=body;
+        const {note}=body;
         const activity=await prisma.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
-                salespersonId:salespersonId,
+                salespersonId,
                 activityType:"NOTE_ADDED",
                 note:note
             }
@@ -134,9 +134,9 @@ export const InquiryService={
 
         return activity;
     },
-    closeInquiry:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"])=>{
+    closeInquiry:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"],salespersonId:number)=>{
         const {inquiryId}=params;
-        const {salespersonId,note}=body;
+        const {note}=body;
 
         return await prisma.$transaction(async(tx)=>{
             const result=await tx.inquiry.updateMany({
@@ -156,7 +156,7 @@ export const InquiryService={
         const activity=await tx.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
-                salespersonId:salespersonId,
+                salespersonId,
                 note:note,
                 activityType:"STATUS_CHANGED"
             }

@@ -123,11 +123,6 @@ const quotationItemSchema = z.object({
 export type TquotationItem=z.infer<typeof quotationItemSchema>;
 
 const quotationRevisionBodySchema= z.object({
-        salespersonId: z
-            .coerce
-            .number()
-            .int("Salesperson Id must be an integer")
-            .positive("Salesperson Id must be positive"),
 
         quotationRevisionStatus: z.enum(
             [
@@ -243,7 +238,6 @@ export type TsendQuotation=z.infer<typeof sendQuotationSchema>;
 export const editQuotationSchema=z.object({
     params:sendQuotationSchema.shape.params,
     body:quotationRevisionBodySchema.omit({
-        salespersonId:true,
         quotationRevisionStatus:true,
         pdfUrl:true
     }).superRefine(validateTaxRates)

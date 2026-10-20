@@ -7,7 +7,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 
 
 export const createQuotation=catchAsync<ValidatedRequest<TcreateQuotation>>(async(req,res:Response)=>{
-    const data=await QuotationService.createQuotation(req.validated.params,req.validated.body);
+    const data=await QuotationService.createQuotation(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(201).json(
         new ApiResponse(201,"Quotationcreated successfully",data)
@@ -52,7 +52,7 @@ export const requestRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(asy
 })
 
 export const createRevision=catchAsync<ValidatedRequest<TquotationIdParams>>(async(req,res:Response)=>{
-    const data=await QuotationService.createRevision(req.validated.params);
+    const data=await QuotationService.createRevision(req.validated.params,req.user!.id);
 
     res.status(201).json(
         new ApiResponse(201,"Revision created successfully",data)
@@ -61,7 +61,7 @@ export const createRevision=catchAsync<ValidatedRequest<TquotationIdParams>>(asy
 })
 
 export const acceptRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
-    const data=await QuotationService.acceptRevision(req.validated.params);
+    const data=await QuotationService.acceptRevision(req.validated.params,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,"Revision accepted, Inquiry closed",data)
@@ -70,7 +70,7 @@ export const acceptRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(asyn
 })
 
 export const rejectRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
-    const data=await QuotationService.rejectRevision(req.validated.params);
+    const data=await QuotationService.rejectRevision(req.validated.params,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,"Revision rejected, Inquiry closed",data)

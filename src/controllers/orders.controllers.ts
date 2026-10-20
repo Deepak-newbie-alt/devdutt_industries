@@ -7,7 +7,7 @@ import type { TorderActivityAddNote, TorderIdParams, TorderStatusTransition, Tvi
 
 
 export const createOrder=catchAsync<ValidatedRequest<TyourOrderBody>>(async(req,res:Response)=>{
-    const data=await OrderService.createOrder(req.validated.body);
+    const data=await OrderService.createOrder(req.validated.body,req.user!.id);
 
     res.status(201).json(
         new ApiResponse(201,"Order created successfully",data)
@@ -34,7 +34,7 @@ export const viewOrdersById=catchAsync<ValidatedRequest<TorderIdParams>>(async(r
 })
 
 export const changeOrderStatus=catchAsync<ValidatedRequest<TorderStatusTransition>>(async(req,res:Response)=>{
-    const data=await OrderService.changeOrderStatus(req.validated.params,req.validated.body);
+    const data=await OrderService.changeOrderStatus(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,"Order status changed successfully",data)
@@ -43,7 +43,7 @@ export const changeOrderStatus=catchAsync<ValidatedRequest<TorderStatusTransitio
 })
 
 export const addNote=catchAsync<ValidatedRequest<TorderActivityAddNote>>(async(req,res:Response)=>{
-    const data=await OrderService.addNote(req.validated.params,req.validated.body);
+    const data=await OrderService.addNote(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,"Note added",data)
