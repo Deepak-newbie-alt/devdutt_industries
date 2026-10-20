@@ -6,8 +6,8 @@ import { orderIdParamsSchema, viewOrdersQuerySchema, yourOrderBodySchema } from 
 import { auth, isSalesperson } from '../middlewares/authMiddleware.js';
 const router=express.Router();
 
-router.get("/",validator(viewOrdersQuerySchema),viewOrders);
-router.get("/:orderId",validator(orderIdParamsSchema),viewOrdersById);
+router.get("/",auth,validator(viewOrdersQuerySchema),viewOrders);
+router.get("/:orderId",auth,validator(orderIdParamsSchema),viewOrdersById);
 router.post("/",auth,isSalesperson,validator(yourOrderBodySchema),createOrder);
 router.patch("/:orderId/status",auth,isSalesperson,validator(orderStatusTransitionSchema),changeOrderStatus);
 router.post("/:orderId/add-note",auth,isSalesperson,validator(orderActivityAddNoteSchema),addNote);

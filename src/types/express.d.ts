@@ -1,10 +1,13 @@
 // src/types/express.d.ts
+import { UserRole,UserStatus } from "../generated/prisma/enums.ts";
 
 declare global {
   namespace Express {
     interface User {
       id:number
-      clerkId:string
+      clerkId:string,
+      status:UserStatus,
+      role:UserRole
     }
 
     interface Request {

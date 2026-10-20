@@ -6,8 +6,8 @@ import { auth, isSalesperson } from "../middlewares/authMiddleware.js";
 const router=express.Router();
 
 router.post("/",validator(createInquirySchema),createInquiry);
-router.get("/",validator(getInquiryQuerySchema),getInquiries);
-router.get("/:inquiryId",validator(getInquiryParams),getInquiryById);
+router.get("/",auth,validator(getInquiryQuerySchema),getInquiries);
+router.get("/:inquiryId",auth,validator(getInquiryParams),getInquiryById);
 router.patch("/:inquiryId/claim",auth,isSalesperson,validator(claimInquirySchema),claimInquiry);
 router.post("/:inquiryId/contact",auth,isSalesperson,validator(claimInquirySchema),contactCustomer);
 router.post("/:inquiryId/activities",auth,isSalesperson,validator(inquiryActivitySchema),addNote);
