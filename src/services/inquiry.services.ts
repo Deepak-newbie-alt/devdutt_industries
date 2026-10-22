@@ -87,8 +87,18 @@ export const InquiryService={
             throw new ApiError(404,"Inquiry not found");
         }
 
-        if(actor.role!=="ADMIN" && actor.id!==inquiry.salespersonId){
-            throw new ApiError(403,"Can't access this resource");
+        const isOwner = actor.id === inquiry.salespersonId;
+
+        const canAccessUnassignedOpen =
+                inquiry.status === "OPEN" &&
+                inquiry.salespersonId === null;
+
+        if (
+        actor.role !== "ADMIN" &&
+        !isOwner &&
+        !canAccessUnassignedOpen
+        ) {
+            throw new ApiError(403,"Forbidden can't access this resource");
         }
         
         return inquiry;
