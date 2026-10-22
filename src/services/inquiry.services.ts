@@ -1,6 +1,6 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
-import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
+import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
 import ApiError from "../utils/ApiError.js";
 
 
@@ -27,34 +27,50 @@ export const InquiryService={
         })
     },
 
-    getInquiries:async(query:TgetInquiryQuery["query"])=>{
-        const {page,limit,id,status}=query;
-        const where:Prisma.InquiryWhereInput={
-            status
+    getInquiries: async (
+        query: TgetInquiryQuery["query"],
+        actor: Actor
+        ) => {
+        const { page, limit, id, status } = query;
+
+        const where: Prisma.InquiryWhereInput = {
+            ...(status && { status }),
+            ...(id && { id }),
+
+            ...(actor.role !== "ADMIN" && {
+            OR: [
+                {
+                status: "OPEN",
+                salespersonId: null,
+                },
+                {
+                status: "IN_PROGRESS",
+                salespersonId: actor.id,
+                },
+                {
+                status: "CLOSED",
+                salespersonId: actor.id,
+                },
+            ],
+            }),
         };
 
-        if(id){
-            where.id=id;
-        }
+        const skip = (page - 1) * limit;
 
-        const skip=(page-1)*limit;
-
-        const prismaQuery:Prisma.InquiryFindManyArgs={
-            take:limit,
+        const prismaQuery: Prisma.InquiryFindManyArgs = {
+            take: limit,
             skip,
             where,
-            orderBy:{
-                createdAt:"desc"
+            orderBy: {
+            createdAt: "desc",
             },
-            include:{
-                product:true
-            }
+            include: {
+            product: true,
+            },
         };
 
-        const inquiries=await prisma.inquiry.findMany(prismaQuery);
-
-        return inquiries;
-    },
+        return prisma.inquiry.findMany(prismaQuery);
+        },
     getInquiryById:async(params:TgetInquiryParams["params"],actor:Actor)=>{
         const {inquiryId}=params;
 
@@ -226,22 +242,55 @@ export const InquiryService={
         return {inquiry,activity};
         })
     },
-    getActivities:async(params:TinquiryActivity["params"],actor:Actor)=>{
-        const {inquiryId}=params;
+    getActivities: async (
+        params: TgetInquiryActivity["params"],
+        actor: Actor
+        ) => {
+        const { inquiryId } = params;
 
-        const activities=await prisma.inquiryActivity.findMany({
-            where:{
-                inquiryId:inquiryId
+        // 1. Find the parent inquiry
+        const inquiry = await prisma.inquiry.findUnique({
+            where: {
+            id: inquiryId,
             },
-            orderBy:{
-                createdAt:"asc"
-            }
-        })
+            select: {
+            id: true,
+            status: true,
+            salespersonId: true,
+            },
+        });
 
-        if(actor.role!=="ADMIN" && actor.id!==activities[0]?.salespersonId){
-            throw new ApiError(403,"Forbidden can't access this resource");
+        // 2. Check whether the inquiry exists
+        if (!inquiry) {
+            throw new ApiError(404, "Inquiry not found");
         }
 
+        // 3. Check access permissions
+        if (actor.role !== "ADMIN") {
+            const isOwner = inquiry.salespersonId === actor.id;
+
+            const canAccessUnassignedOpen =
+            inquiry.status === "OPEN" &&
+            inquiry.salespersonId === null;
+
+            if (!isOwner && !canAccessUnassignedOpen) {
+            throw new ApiError(
+                403,
+                "Forbidden: can't access this resource"
+            );
+            }
+        }
+
+        // 4. Fetch the activity history
+        const activities = await prisma.inquiryActivity.findMany({
+            where: {
+            inquiryId,
+            },
+            orderBy: {
+            createdAt: "asc",
+            },
+        });
+
         return activities;
-    }
+        },
 }

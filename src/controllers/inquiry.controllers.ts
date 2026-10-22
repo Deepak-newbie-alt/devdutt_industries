@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { catchAsync } from "../utils/catchAsync.js";
 import type { ValidatedRequest } from '../types/ValidatedRequest.js';
 import { InquiryService } from '../services/inquiry.services.js';
-import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
+import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 
@@ -16,8 +16,11 @@ export const createInquiry=catchAsync<ValidatedRequest<TcreateInquiryInput>>(asy
 })
 
 export const getInquiries=catchAsync<ValidatedRequest<TgetInquiryQuery>>(async(req,res:Response)=>{
-    
-    const data=await InquiryService.getInquiries(req.validated.query);
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const data=await InquiryService.getInquiries(req.validated.query,actor);
 
     res.status(200).json(
         new ApiResponse(200,"Inquiries fetched successfully",data)
@@ -76,7 +79,7 @@ export const closeInquiry=catchAsync<ValidatedRequest<TinquiryActivity>>(async(r
     return;
 })
 
-export const getActivities=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
+export const getActivities=catchAsync<ValidatedRequest<TgetInquiryActivity>>(async(req,res:Response)=>{
     const actor:Actor={
         id:req.user!.id,
         role:req.user!.role

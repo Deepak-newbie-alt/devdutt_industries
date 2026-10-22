@@ -95,3 +95,9 @@ export const inquiryActivitySchema=z.object({
 })
 
 export type TinquiryActivity=z.infer<typeof inquiryActivitySchema>;
+
+export const getInquiryActivitySchema=z.object({
+    params:inquiryActivitySchema.shape.params
+})
+
+export type TgetInquiryActivity=z.infer<typeof getInquiryActivitySchema>;

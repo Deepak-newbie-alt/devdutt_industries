@@ -404,34 +404,61 @@ export const QuotationService = {
             });
         });
     },
-    getRevisions:async(params:TquotationIdParams["params"],actor:Actor)=>{
-        const {quotationId}=params;
+    getRevisions: async (
+        params: TquotationIdParams["params"],
+        actor: Actor
+        ) => {
+        const { quotationId } = params;
 
-        const revisions=await prisma.quotationRevision.findMany({
-            where:{
-                quotationId
+        // 1. Find the parent quotation
+        const quotation = await prisma.quotation.findUnique({
+            where: {
+                id: quotationId,
             },
-            include:{
-                quotation:{
-                    select:{
-                        inquiryId:true,
-                        quotationNumber:true,
-                        salespersonId:true
-                    }
-                },
-                items:true
+            select: {
+                id: true,
+                salespersonId: true,
             },
-            orderBy:{
-                revisionNumber:"asc"
-            }
-        })
+        });
 
-        if(actor.role!=="ADMIN" && actor.id!==revisions[0]?.quotation.salespersonId){
-            throw new ApiError(403,"Forbidden can't access this resource");
+        // 2. Check whether the quotation exists
+        if (!quotation) {
+            throw new ApiError(404, "Quotation not found");
         }
 
+        // 3. Check ownership
+        if (
+            actor.role !== "ADMIN" &&
+            actor.id !== quotation.salespersonId
+        ) {
+            throw new ApiError(
+            403,
+            "Forbidden: can't access this resource"
+            );
+        }
+
+        // 4. Fetch revisions
+        const revisions = await prisma.quotationRevision.findMany({
+            where: {
+                quotationId,
+            },
+            include: {
+            quotation: {
+                select: {
+                    inquiryId: true,
+                    quotationNumber: true,
+                    salespersonId: true,
+                },
+            },
+            items: true,
+            },
+            orderBy: {
+                revisionNumber: "asc",
+            },
+        });
+
         return revisions;
-    },
+        },
     requestRevision:async(params:TrevisionIdParams["params"])=>{
         const {revisionId}=params;
 
