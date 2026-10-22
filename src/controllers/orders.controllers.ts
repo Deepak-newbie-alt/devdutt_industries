@@ -25,7 +25,11 @@ export const viewOrders=catchAsync<ValidatedRequest<TviewOrdersQuery>>(async(req
 })
 
 export const viewOrdersById=catchAsync<ValidatedRequest<TorderIdParams>>(async(req,res:Response)=>{
-    const data=await OrderService.viewOrdersById(req.validated.params);
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const data=await OrderService.viewOrdersById(req.validated.params,actor);
 
     res.status(200).json(
         new ApiResponse(200,"Order fetched by id",data)
@@ -52,7 +56,11 @@ export const addNote=catchAsync<ValidatedRequest<TorderActivityAddNote>>(async(r
 })
 
 export const viewActivities=catchAsync<ValidatedRequest<TorderIdParams>>(async(req,res:Response)=>{
-    const data=await OrderService.viewActivities(req.validated.params);
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const data=await OrderService.viewActivities(req.validated.params,actor);
 
     res.status(200).json(
         new ApiResponse(200,"Order activity lifecycle",data)

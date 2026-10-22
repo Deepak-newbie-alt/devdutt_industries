@@ -1,4 +1,5 @@
 import z from "zod";
+import { InquiryStatus } from "../generated/prisma/enums.js";
 
 export const createInquirySchema=z.object({
     body:z.object({
@@ -40,6 +41,9 @@ export const getInquiryQuerySchema=z.object({
             .int("Id must be an integer")
             .positive("Id must be positive")
             .optional(),
+            status:z
+            .enum(InquiryStatus)
+            .default("OPEN")
     })
 })
 

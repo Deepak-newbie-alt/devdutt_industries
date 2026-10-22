@@ -34,7 +34,11 @@ export const editQuotation=catchAsync<ValidatedRequest<TeditQuotationRevision>>(
 })
 
 export const getRevisions=catchAsync<ValidatedRequest<TquotationIdParams>>(async(req,res:Response)=>{
-    const data=await QuotationService.getRevisions(req.validated.params);
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const data=await QuotationService.getRevisions(req.validated.params,actor);
 
     res.status(200).json(
         new ApiResponse(200,"Revisions fetched successfully",data)

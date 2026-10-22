@@ -16,6 +16,7 @@ export const createInquiry=catchAsync<ValidatedRequest<TcreateInquiryInput>>(asy
 })
 
 export const getInquiries=catchAsync<ValidatedRequest<TgetInquiryQuery>>(async(req,res:Response)=>{
+    
     const data=await InquiryService.getInquiries(req.validated.query);
 
     res.status(200).json(
@@ -26,7 +27,11 @@ export const getInquiries=catchAsync<ValidatedRequest<TgetInquiryQuery>>(async(r
 })
 
 export const getInquiryById=catchAsync<ValidatedRequest<TgetInquiryParams>>(async(req,res:Response)=>{
-    const data=await InquiryService.getInquiryById(req.validated.params);
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const data=await InquiryService.getInquiryById(req.validated.params,actor);
 
     res.status(200).json(
         new ApiResponse(200,"Inquiry fetched successfully",data)
@@ -72,7 +77,11 @@ export const closeInquiry=catchAsync<ValidatedRequest<TinquiryActivity>>(async(r
 })
 
 export const getActivities=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
-    const data=await InquiryService.getActivities(req.validated.params);
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const data=await InquiryService.getActivities(req.validated.params,actor);
 
     res.status(200).json(
         new ApiResponse(200,"Activity history fetched successfully",data)

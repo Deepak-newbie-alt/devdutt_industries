@@ -28,10 +28,10 @@ export const InquiryService={
     },
 
     getInquiries:async(query:TgetInquiryQuery["query"])=>{
-        const {page,limit,id}=query;
+        const {page,limit,id,status}=query;
         const where:Prisma.InquiryWhereInput={
-            status:"OPEN"
-        }
+            status
+        };
 
         if(id){
             where.id=id;
@@ -55,7 +55,7 @@ export const InquiryService={
 
         return inquiries;
     },
-    getInquiryById:async(params:TgetInquiryParams["params"])=>{
+    getInquiryById:async(params:TgetInquiryParams["params"],actor:Actor)=>{
         const {inquiryId}=params;
 
         const inquiry=await prisma.inquiry.findUnique({
@@ -66,6 +66,14 @@ export const InquiryService={
                 product:true
             }
         })
+
+        if(!inquiry){
+            throw new ApiError(404,"Inquiry not found");
+        }
+
+        if(actor.role!=="ADMIN" && actor.id!==inquiry.salespersonId){
+            throw new ApiError(403,"Can't access this resource");
+        }
         
         return inquiry;
     },
@@ -218,7 +226,7 @@ export const InquiryService={
         return {inquiry,activity};
         })
     },
-    getActivities:async(params:TinquiryActivity["params"])=>{
+    getActivities:async(params:TinquiryActivity["params"],actor:Actor)=>{
         const {inquiryId}=params;
 
         const activities=await prisma.inquiryActivity.findMany({
@@ -229,6 +237,10 @@ export const InquiryService={
                 createdAt:"asc"
             }
         })
+
+        if(actor.role!=="ADMIN" && actor.id!==activities[0]?.salespersonId){
+            throw new ApiError(403,"Forbidden can't access this resource");
+        }
 
         return activities;
     }

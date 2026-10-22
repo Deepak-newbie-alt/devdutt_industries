@@ -143,7 +143,7 @@ export const OrderService = {
             }
         };
     },
-    viewOrdersById:async(params:TorderIdParams["params"])=>{
+    viewOrdersById:async(params:TorderIdParams["params"],actor:Actor)=>{
         const {orderId}=params;
 
         const order=await prisma.order.findUnique({
@@ -158,6 +158,10 @@ export const OrderService = {
 
         if(!order){
             throw new ApiError(404,"Order not found");
+        }
+
+        if(actor.role!=="ADMIN" && actor.id!==order.quotationRevision.salespersonId){
+            throw new ApiError(403,"Forbidden can't access this resource");
         }
 
         return order;
@@ -271,17 +275,28 @@ export const OrderService = {
             }
         })
     },
-    viewActivities:async(params:TorderIdParams["params"])=>{
+    viewActivities:async(params:TorderIdParams["params"],actor:Actor)=>{
         const {orderId}=params;
 
         const order=await prisma.order.findUnique({
             where:{
                 id:orderId
+            },
+            include:{
+                quotationRevision:{
+                    select:{
+                        salespersonId:true
+                    }
+                }
             }
         })
 
         if(!order){
             throw new ApiError(404,"Order not found");
+        }
+
+        if(actor.role!=="ADMIN" && actor.id!==order.quotationRevision.salespersonId){
+            throw new ApiError(403,"Forbidden can't access this resource");
         }
 
         return prisma.orderActivity.findMany({

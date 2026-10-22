@@ -404,7 +404,7 @@ export const QuotationService = {
             });
         });
     },
-    getRevisions:async(params:TquotationIdParams["params"])=>{
+    getRevisions:async(params:TquotationIdParams["params"],actor:Actor)=>{
         const {quotationId}=params;
 
         const revisions=await prisma.quotationRevision.findMany({
@@ -415,7 +415,8 @@ export const QuotationService = {
                 quotation:{
                     select:{
                         inquiryId:true,
-                        quotationNumber:true
+                        quotationNumber:true,
+                        salespersonId:true
                     }
                 },
                 items:true
@@ -424,6 +425,10 @@ export const QuotationService = {
                 revisionNumber:"asc"
             }
         })
+
+        if(actor.role!=="ADMIN" && actor.id!==revisions[0]?.quotation.salespersonId){
+            throw new ApiError(403,"Forbidden can't access this resource");
+        }
 
         return revisions;
     },
