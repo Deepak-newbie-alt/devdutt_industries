@@ -23,6 +23,10 @@ export const OrderService = {
                 throw new ApiError(404, "Revision not found");
             }
 
+            if(revision.salespersonId!==userId){
+                throw new ApiError(403,"Forbidden can't access other salesperson resource");
+            }
+
             if (revision.quotationRevisionStatus !== "ACCEPTED") {
                 throw new ApiError(
                     409,
@@ -166,11 +170,22 @@ export const OrderService = {
             const order=await tx.order.findUnique({
                 where:{
                     id:orderId
+                },
+                include:{
+                    quotationRevision:{
+                        select:{
+                            salespersonId:true
+                        }
+                    }
                 }
             })
 
             if(!order){
                 throw new ApiError(404,"Order not found");
+            }
+
+            if(order.quotationRevision.salespersonId!==userId){
+                throw new ApiError(403,"Forbidden can't access other salesperson resource");
             }
 
             if(order.status==="DELIVERED" || order.status==="CANCELLED"){
@@ -229,11 +244,22 @@ export const OrderService = {
         const order=await prisma.order.findUnique({
             where:{
                 id:orderId
+            },
+            include:{
+                quotationRevision:{
+                    select:{
+                        salespersonId:true
+                    }
+                }
             }
         })
 
         if(!order){
             throw new ApiError(404,"Order not found");
+        }
+
+        if(order.quotationRevision.salespersonId!==userId){
+            throw new ApiError(403,"Forbidden can't access other salesperson resource");
         }
 
         return await prisma.orderActivity.create({

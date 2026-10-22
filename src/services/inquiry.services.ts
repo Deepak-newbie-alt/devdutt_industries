@@ -109,6 +109,22 @@ export const InquiryService={
     contactCustomer:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"],salespersonId:number)=>{
         const {inquiryId}=params;
         const {note}=body;
+
+        const inquiry=await prisma.inquiry.findUnique({
+                where:{
+                    id:inquiryId
+                }
+        })
+
+        if(!inquiry){
+            throw new ApiError(404,"Inquiry not found");
+        }
+
+        if(inquiry.salespersonId!==salespersonId){
+            throw new ApiError(403,"Forbidden can't access other salesperson inquiry");
+
+        }
+
         const activity=await prisma.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
@@ -123,6 +139,22 @@ export const InquiryService={
     addNote:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"],salespersonId:number)=>{
         const {inquiryId}=params;
         const {note}=body;
+
+        const inquiry=await prisma.inquiry.findUnique({
+                where:{
+                    id:inquiryId
+                }
+        })
+
+        if(!inquiry){
+            throw new ApiError(404,"Inquiry not found");
+        }
+
+        if(inquiry.salespersonId!==salespersonId){
+            throw new ApiError(403,"Forbidden can't access other salesperson inquiry");
+
+        }
+
         const activity=await prisma.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
@@ -139,6 +171,21 @@ export const InquiryService={
         const {note}=body;
 
         return await prisma.$transaction(async(tx)=>{
+            const inquiryExists=await tx.inquiry.findUnique({
+                where:{
+                    id:inquiryId
+                }
+            })
+
+            if(!inquiryExists){
+                throw new ApiError(404,"Inquiry not found");
+            }
+
+            if(inquiryExists.salespersonId!==salespersonId){
+                throw new ApiError(403,"Forbidden can't access other salesperson inquiry");
+
+            }
+
             const result=await tx.inquiry.updateMany({
             where:{
                 id:inquiryId,

@@ -9,7 +9,7 @@ router.post("/",validator(createInquirySchema),createInquiry);
 router.get("/",auth,validator(getInquiryQuerySchema),getInquiries);
 router.get("/:inquiryId",auth,validator(getInquiryParams),getInquiryById);
 router.patch("/:inquiryId/claim",auth,isSalesperson,validator(claimInquirySchema),claimInquiry);
-router.post("/:inquiryId/contact",auth,isSalesperson,validator(claimInquirySchema),contactCustomer);
+router.post("/:inquiryId/contact",auth,isSalesperson,validator(inquiryActivitySchema),contactCustomer);
 router.post("/:inquiryId/activities",auth,isSalesperson,validator(inquiryActivitySchema),addNote);
 router.patch("/:inquiryId/close",auth,isSalesperson,validator(inquiryActivitySchema),closeInquiry);
 router.get("/:inquiryId/activities",auth,validator(inquiryActivitySchema),getActivities);

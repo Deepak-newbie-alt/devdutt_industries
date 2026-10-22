@@ -8,7 +8,7 @@ const router=express.Router();
 router.post("/:inquiryId",auth,isSalesperson,validator(createQuotationSchema),createQuotation);
 router.put("/:revisionId",auth,isSalesperson,validator(editQuotationSchema),editQuotation);
 router.get("/:quotationId",auth,validator(quotationIdParamsSchema),getRevisions);
-router.post("/:quotationId/revisions",auth,validator(quotationIdParamsSchema),createRevision);
+router.post("/:quotationId/revisions",auth,isSalesperson,validator(quotationIdParamsSchema),createRevision);
 router.patch("/revisions/:revisionId/request-revision",validator(revisionIdParamsSchema),requestRevision);
 router.patch("/revisions/:revisionId/accept",validator(revisionIdParamsSchema),acceptRevision);
 router.patch("/revisions/:revisionId/reject",validator(revisionIdParamsSchema),rejectRevision);

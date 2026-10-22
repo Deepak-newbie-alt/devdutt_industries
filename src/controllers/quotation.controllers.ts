@@ -16,7 +16,7 @@ export const createQuotation=catchAsync<ValidatedRequest<TcreateQuotation>>(asyn
 })
 
 export const sendQuotation=catchAsync<ValidatedRequest<TsendQuotation>>(async(req,res:Response)=>{
-    const data=await QuotationService.sendQuotation(req.validated.params,req.validated.body);
+    const data=await QuotationService.sendQuotation(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,"Quotation sent successfully",data)
@@ -25,7 +25,7 @@ export const sendQuotation=catchAsync<ValidatedRequest<TsendQuotation>>(async(re
 })
 
 export const editQuotation=catchAsync<ValidatedRequest<TeditQuotationRevision>>(async(req,res:Response)=>{
-    const data=await QuotationService.editQuotationRevision(req.validated.params,req.validated.body);
+    const data=await QuotationService.editQuotationRevision(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,"Quotation edited successfully",data)
@@ -61,7 +61,7 @@ export const createRevision=catchAsync<ValidatedRequest<TquotationIdParams>>(asy
 })
 
 export const acceptRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
-    const data=await QuotationService.acceptRevision(req.validated.params,req.user!.id);
+    const data=await QuotationService.acceptRevision(req.validated.params);
 
     res.status(200).json(
         new ApiResponse(200,"Revision accepted, Inquiry closed",data)
@@ -70,7 +70,7 @@ export const acceptRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(asyn
 })
 
 export const rejectRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
-    const data=await QuotationService.rejectRevision(req.validated.params,req.user!.id);
+    const data=await QuotationService.rejectRevision(req.validated.params);
 
     res.status(200).json(
         new ApiResponse(200,"Revision rejected, Inquiry closed",data)

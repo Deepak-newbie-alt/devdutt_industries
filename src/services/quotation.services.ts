@@ -204,8 +204,22 @@ export const QuotationService = {
             });
         });
     },
-    sendQuotation:async(params:TsendQuotation["params"],body:TsendQuotation["body"])=>{
+    sendQuotation:async(params:TsendQuotation["params"],body:TsendQuotation["body"],salespersonId:number)=>{
         return await prisma.$transaction(async(tx)=>{
+            const revisionExists=await tx.quotationRevision.findUnique({
+                where:{
+                    id:params.revisionId
+                }
+            })
+
+            if(!revisionExists){
+                throw new ApiError(403,"Revision does not exists");
+            }
+
+            if(revisionExists.salespersonId!==salespersonId){
+                throw new ApiError(403,"Forbidden, can't access other salesperson's resource");
+            }
+
             const revision=await tx.quotationRevision.update({
                 where:{
                     id:params.revisionId,
@@ -244,7 +258,8 @@ export const QuotationService = {
     
     editQuotationRevision: async (
         params: TeditQuotationRevision["params"],
-        body: TeditQuotationRevision["body"]
+        body: TeditQuotationRevision["body"],
+        salespersonId:number
     ) => {
         const {
             buyerName,
@@ -310,6 +325,22 @@ export const QuotationService = {
 
         return prisma.$transaction(async (tx) => {
             // Only draft revisions can be edited
+
+            const revisionExists=await tx.quotationRevision.findUnique({
+                where:{
+                    id:params.revisionId
+                }
+            })
+
+            if(!revisionExists){
+                throw new ApiError(403,"Revision does not exists");
+            }
+
+            if(revisionExists.salespersonId!==salespersonId){
+                throw new ApiError(403,"Forbidden, can't access other salesperson's resource");
+            }
+
+
             const revision = await tx.quotationRevision.update({
                 where: {
                     id: params.revisionId,
@@ -430,12 +461,17 @@ export const QuotationService = {
                     quotationId
                 },
                 select:{
-                    revisionNumber:true
+                    revisionNumber:true,
+                    salespersonId:true
                 },
                 orderBy:{
                     revisionNumber:"desc"
                 }
             });
+
+            if(revisions[0]?.salespersonId!==salespersonId){
+                throw new ApiError(403,"Can access other salesperson quotation");
+            }
         
             const latestRevisionNumber = revisions[0]?.revisionNumber;
 
@@ -519,7 +555,7 @@ export const QuotationService = {
             return newRevision;
         });
     },
-    acceptRevision:async(params:TrevisionIdParams["params"],salespersonId:number)=>{
+    acceptRevision:async(params:TrevisionIdParams["params"])=>{
         const {revisionId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -561,7 +597,7 @@ export const QuotationService = {
                 throw new ApiError(404,"Can't find associated inquiry for revision");
             }
 
-            await tx.inquiry.update({
+            const inquiry=await tx.inquiry.update({
                 where:{
                     id: inquiryId
                 },
@@ -580,7 +616,7 @@ export const QuotationService = {
             await tx.inquiryActivity.create({
                 data:{
                     inquiryId,
-                    salespersonId,
+                    salespersonId:inquiry.salespersonId,
                     activityType:"STATUS_CHANGED",
                     note:`Inquiry close because quotation ${quotationNumber} was accepted`
                 }
@@ -594,7 +630,7 @@ export const QuotationService = {
             };
         })
     },
-    rejectRevision:async(params:TrevisionIdParams["params"],salespersonId:number)=>{
+    rejectRevision:async(params:TrevisionIdParams["params"])=>{
         const {revisionId}=params;
 
         return await prisma.$transaction(async(tx)=>{
@@ -636,7 +672,7 @@ export const QuotationService = {
                 throw new ApiError(404,"Can't find associated inquiry for revision");
             }
 
-            await tx.inquiry.update({
+            const inquiry=await tx.inquiry.update({
                 where:{
                     id: inquiryId
                 },
@@ -655,7 +691,7 @@ export const QuotationService = {
             await tx.inquiryActivity.create({
                 data:{
                     inquiryId,
-                    salespersonId,
+                    salespersonId:inquiry.salespersonId,
                     activityType:"STATUS_CHANGED",
                     note:`Inquiry close because quotation ${quotationNumber} was rejected`
                 }
