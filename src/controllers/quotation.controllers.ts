@@ -4,6 +4,7 @@ import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { QuotationService } from "../services/quotation.services.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import { quotationPdfService } from "../services/generate.pdf.services.js";
 
 
 export const createQuotation=catchAsync<ValidatedRequest<TcreateQuotation>>(async(req,res:Response)=>{
@@ -79,5 +80,15 @@ export const rejectRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(asyn
     res.status(200).json(
         new ApiResponse(200,"Revision rejected, Inquiry closed",data)
     )
+    return;
+})
+
+export const generatePdf=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
+
+    const data=await quotationPdfService.generate(req.validated.params,req.user!.id);
+
+    res.status(201).json(
+        new ApiResponse(201,"Pdf generated successfully",data)
+    );
     return;
 })

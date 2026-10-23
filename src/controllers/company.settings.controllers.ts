@@ -14,7 +14,7 @@ export const createCompanySettings = catchAsync<ValidatedRequest<TcreateCompanyS
         const data = await companySettingsService.createCompanySettings(req.validated.body);
 
         res.status(201).json(
-            new ApiResponse(200,"Company settings created successfully",data)
+            new ApiResponse(201,"Company settings created successfully",data)
         );
         return;
     }
