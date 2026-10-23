@@ -14,6 +14,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^22.20.3",
     "@types/node-cron": "^3.0.11",
+    "@types/pdfmake": "^0.3.3",
     "dotenv": "^17.4.2",
     "prisma": "^7.10.0",
     "typescript": "^7.0.2"
@@ -25,6 +26,7 @@
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
     "node-cron": "^4.6.0",
+    "pdfmake": "^0.3.12",
     "pg": "^8.23.0",
     "zod": "^4.6.5"
   }
