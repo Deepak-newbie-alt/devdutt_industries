@@ -41,14 +41,3 @@ export const updateCompanySettings = catchAsync<ValidatedRequest<TupdateCompanyS
         return;
     }
 );
-
-export const deleteCompanySettings = catchAsync(
-    async (_req, res: Response) => {
-        const data = await companySettingsService.deleteCompanySettings();
-
-        res.status(200).json(
-            new ApiResponse(200,"Company settings deleted successfully",data)
-        );
-        return;
-    }
-);

@@ -52,16 +52,4 @@ export const companySettingsService = {
 
         return companySettings;
     },
-
-    deleteCompanySettings: async () => {
-        const companySettings = await prisma.companySettings.delete({
-            where: {
-                id: 1
-            }
-        });
-
-        return {
-            id: companySettings.id
-        };
-    }
 };

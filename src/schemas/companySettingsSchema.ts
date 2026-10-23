@@ -58,8 +58,7 @@ export const createCompanySettingsSchema = z.object({
             .default(null),
 
         website: z
-            .string()
-            .trim()
+            .url()
             .max(255, "Website URL is too long")
             .nullable()
             .default(null),
@@ -77,8 +76,7 @@ export const createCompanySettingsSchema = z.object({
             .default(null),
 
         logoUrl: z
-            .string()
-            .trim()
+            .url()
             .max(500, "Logo URL is too long")
             .nullable()
             .default(null),
