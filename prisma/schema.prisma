@@ -79,7 +79,7 @@ model User {
   name            String
   email           String              @unique @db.VarChar(255)
   phone           String              @unique @db.VarChar(20)
-  passwordHash    String
+  passwordHash    String?
   role            UserRole
   status          UserStatus          @default(ACTIVE)
   inquiries       Inquiry[]
