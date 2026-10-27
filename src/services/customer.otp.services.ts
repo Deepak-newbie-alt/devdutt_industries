@@ -178,7 +178,7 @@ export const CustomerOtpService = {
         const now = new Date();
 
         // Serialize requests sharing a limit key so concurrent requests can't all pass the counts.
-        await prisma.$transaction(async (tx) => {
+        const { createdAt } = await prisma.$transaction(async (tx) => {
             for (const key of lockKeys) {
                 await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
             }
@@ -186,7 +186,7 @@ export const CustomerOtpService = {
             await assertWithinLimits(tx, target, requestIpHash, now);
 
             // Unsent until delivery succeeds; placeholders (no phone) are never usable.
-            await tx.customerOtpChallenge.create({
+            return tx.customerOtpChallenge.create({
                 data: {
                     id: challengeId,
                     purpose: target.purpose,
@@ -197,7 +197,8 @@ export const CustomerOtpService = {
                         : hmac(randomBytes(32).toString("hex")),
                     expiresAt: new Date(now.getTime() + CODE_TTL_SECONDS * 1000),
                     requestIpHash
-                }
+                },
+                select: { createdAt: true }
             });
         });
 
@@ -230,24 +231,39 @@ export const CustomerOtpService = {
         }
 
         // Delivered: activate it and retire older codes for the same purpose and target.
-        const sentAt = new Date();
+        // Deliveries can finish out of order, so this runs under the target lock and
+        // only ever retires challenges created before this one.
+        await prisma.$transaction(async (tx) => {
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`otp:target:${targetKey}`}, 0))`;
 
-        await prisma.$transaction([
-            prisma.customerOtpChallenge.update({
-                where: { id: challengeId },
+            const sentAt = new Date();
+
+            // A newer code already delivered has expired this one; it must not retire anything.
+            const activated = await tx.customerOtpChallenge.updateMany({
+                where: {
+                    id: challengeId,
+                    sentAt: null,
+                    expiresAt: { gt: sentAt }
+                },
                 data: { sentAt }
-            }),
-            prisma.customerOtpChallenge.updateMany({
+            });
+
+            if (activated.count === 0) {
+                return;
+            }
+
+            await tx.customerOtpChallenge.updateMany({
                 where: {
                     id: { not: challengeId },
                     purpose: target.purpose,
                     ...(isInquiry ? { phoneNumber } : { resourceId }),
+                    createdAt: { lt: createdAt },
                     consumedAt: null,
                     expiresAt: { gt: sentAt }
                 },
                 data: { expiresAt: sentAt }
-            })
-        ]);
+            });
+        });
 
         return response;
     },
