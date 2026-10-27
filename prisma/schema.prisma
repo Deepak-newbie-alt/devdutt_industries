@@ -233,7 +233,6 @@ model QuotationRevision {
 
   terms         Json
   validUntil    DateTime @db.Date
-  pdfUrl        String?
   salespersonId Int
   salesperson   User     @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
 
@@ -254,11 +253,29 @@ model QuotationRevision {
 
   order Order?
 
+  document QuotationDocument?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([quotationId, revisionNumber])
   @@map("quotationrevisions")
+}
+
+// PDF issued when a revision is sent. Written once, never updated.
+model QuotationDocument {
+  id                  Int               @id @default(autoincrement())
+  quotationRevisionId Int               @unique
+  quotationRevision   QuotationRevision @relation(fields: [quotationRevisionId], references: [id], onDelete: Restrict)
+
+  fileName  String @db.VarChar(100)
+  content   Bytes
+  sha256    String @db.Char(64)
+  sizeBytes Int
+
+  createdAt DateTime @default(now())
+
+  @@map("quotationdocuments")
 }
 
 model QuotationItem {

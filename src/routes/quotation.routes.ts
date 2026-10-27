@@ -1,6 +1,6 @@
 import express from "express";
 import { createQuotationSchema, editQuotationSchema, quotationIdParamsSchema, revisionIdParamsSchema, sendQuotationSchema } from "../schemas/quotationSchema.js";
-import { acceptRevision, createQuotation, createRevision, editQuotation, generatePdf, getRevisions, rejectRevision, requestRevision, sendQuotation } from "../controllers/quotation.controllers.js";
+import { acceptRevision, createQuotation, createRevision, editQuotation, generatePdf, getIssuedDocument, getRevisions, rejectRevision, requestRevision, sendQuotation } from "../controllers/quotation.controllers.js";
 import { validator } from "../middlewares/validationMiddleware.js";
 import { auth, isSalesperson } from "../middlewares/authMiddleware.js";
 const router=express.Router();
@@ -13,6 +13,7 @@ router.patch("/revisions/:revisionId/request-revision",validator(revisionIdParam
 router.patch("/revisions/:revisionId/accept",validator(revisionIdParamsSchema),acceptRevision);
 router.patch("/revisions/:revisionId/reject",validator(revisionIdParamsSchema),rejectRevision);
 router.patch("/revisions/:revisionId/send-quotation",auth,isSalesperson,validator(sendQuotationSchema),sendQuotation);
-router.post("/:revisionId",auth,isSalesperson,validator(revisionIdParamsSchema),generatePdf);
+router.post("/revisions/:revisionId",auth,isSalesperson,validator(revisionIdParamsSchema),generatePdf);
+router.get("/revisions/:revisionId/document",auth,validator(revisionIdParamsSchema),getIssuedDocument);
 
 export default router;

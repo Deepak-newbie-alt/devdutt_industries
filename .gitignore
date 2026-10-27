@@ -15,3 +15,6 @@ src/generated/prisma/
 # Logs
 *.log
 npm-debug.log*
+
+# Generated files (quotation PDFs contain customer data)
+uploads/

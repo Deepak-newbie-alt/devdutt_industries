@@ -17,7 +17,7 @@ export const createQuotation=catchAsync<ValidatedRequest<TcreateQuotation>>(asyn
 })
 
 export const sendQuotation=catchAsync<ValidatedRequest<TsendQuotation>>(async(req,res:Response)=>{
-    const data=await QuotationService.sendQuotation(req.validated.params,req.validated.body,req.user!.id);
+    const data=await QuotationService.sendQuotation(req.validated.params,req.user!.id);
 
     res.status(200).json(
         new ApiResponse(200,"Quotation sent successfully",data)
@@ -85,10 +85,32 @@ export const rejectRevision=catchAsync<ValidatedRequest<TrevisionIdParams>>(asyn
 
 export const generatePdf=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
 
-    const data=await quotationPdfService.generate(req.validated.params,req.user!.id);
+    const {buffer,fileName}=await quotationPdfService.generate(req.validated.params,req.user!.id);
 
-    res.status(201).json(
-        new ApiResponse(201,"Pdf generated successfully",data)
-    );
+    // Draft previews are streamed and never cached or stored.
+    res.status(200).set({
+        "Content-Type":"application/pdf",
+        "Content-Disposition":`inline; filename="${fileName}"`,
+        "Content-Length":String(buffer.length),
+        "Cache-Control":"no-store"
+    }).send(buffer);
+    return;
+})
+
+export const getIssuedDocument=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const document=await QuotationService.getIssuedDocument(req.validated.params,actor);
+
+    // Issued documents never change, so the hash is a stable ETag.
+    res.status(200).set({
+        "Content-Type":"application/pdf",
+        "Content-Disposition":`inline; filename="${document.fileName}"`,
+        "Content-Length":String(document.sizeBytes),
+        "ETag":`"${document.sha256}"`,
+        "Cache-Control":"private, max-age=31536000, immutable"
+    }).send(Buffer.from(document.content));
     return;
 })

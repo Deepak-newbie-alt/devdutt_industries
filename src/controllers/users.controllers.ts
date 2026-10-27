@@ -6,6 +6,8 @@ import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { UserService, UserServiceError } from "../services/user.services.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import ApiError from "../utils/ApiError.js";
+import { getAuth } from "@clerk/express";
 
 
 
@@ -38,16 +40,16 @@ export const createSalesman =
 export const getCurrentUser =
     catchAsync(
         async (req, res: Response) => {
-            const clerkId = req.user?.clerkId;
+            const { isAuthenticated, userId } = getAuth(req);
 
-            if (!clerkId) {
+            if (!isAuthenticated || !userId) {
                 throw new UserServiceError(
                     "Authentication required.",
                     401
                 );
             }
 
-            const data = await UserService.getByClerkId(clerkId);
+            const data = await UserService.getByClerkId(userId);
 
             res.status(200).json(
                 new ApiResponse(
@@ -111,6 +113,14 @@ export const listUsers =
 export const updateProfile =
     catchAsync<ValidatedRequest<TupdateProfile>>(
         async (req, res: Response) => {
+
+            // Users may edit only their own profile; admins may edit any.
+            if (
+                req.user!.role !== "ADMIN" &&
+                req.user!.id !== req.validated.params.id
+            ) {
+                throw new ApiError(403, "Forbidden: can't edit another user's profile");
+            }
 
             const data = await UserService.updateProfile(
                 req.validated.params,

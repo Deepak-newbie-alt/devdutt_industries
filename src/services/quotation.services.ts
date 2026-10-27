@@ -8,8 +8,23 @@ import type {
     TrevisionIdParams,
     TsendQuotation
 } from "../schemas/quotationSchema.js";
+import { createHash } from "node:crypto";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
+import {
+    getQuotationFileBaseName,
+    quotationPdfRevisionInclude,
+    renderQuotationPdf
+} from "./generate.pdf.services.js";
+
+// Issued document metadata; never includes the PDF bytes.
+const quotationDocumentSummarySelect = {
+    id: true,
+    fileName: true,
+    sha256: true,
+    sizeBytes: true,
+    createdAt: true
+} satisfies Prisma.QuotationDocumentSelect;
 
 export const QuotationService = {
 
@@ -204,7 +219,8 @@ export const QuotationService = {
             });
         });
     },
-    sendQuotation:async(params:TsendQuotation["params"],body:TsendQuotation["body"],salespersonId:number)=>{
+    sendQuotation:async(params:TsendQuotation["params"],salespersonId:number)=>{
+        // Status change and issued document commit together, or not at all.
         return await prisma.$transaction(async(tx)=>{
             const revisionExists=await tx.quotationRevision.findUnique({
                 where:{
@@ -220,7 +236,8 @@ export const QuotationService = {
                 throw new ApiError(403,"Forbidden, can't access other salesperson's resource");
             }
 
-            const revision=await tx.quotationRevision.update({
+            // Claim the draft first; the row lock makes concurrent edits and sends wait, then fail.
+            const result=await tx.quotationRevision.updateMany({
                 where:{
                     id:params.revisionId,
                     quotationRevisionStatus:"DRAFT",
@@ -229,8 +246,48 @@ export const QuotationService = {
                     }
                 },
                 data:{
-                    quotationRevisionStatus:"SENT",
-                    pdfUrl:body.pdfUrl
+                    quotationRevisionStatus:"SENT"
+                }
+            })
+
+            if(result.count===0){
+                throw new ApiError(409,"Only draft, unexpired revisions can be sent");
+            }
+
+            const company=await tx.companySettings.findUnique({
+                where:{
+                    id:1
+                }
+            })
+
+            if(!company){
+                throw new ApiError(404,"Company settings not found");
+            }
+
+            // Render from the data being issued, read inside this transaction.
+            const pdfRevision=await tx.quotationRevision.findUniqueOrThrow({
+                where:{
+                    id:params.revisionId
+                },
+                include:quotationPdfRevisionInclude
+            })
+
+            const content=await renderQuotationPdf(company,pdfRevision);
+
+            const document=await tx.quotationDocument.create({
+                data:{
+                    quotationRevisionId:pdfRevision.id,
+                    fileName:`${getQuotationFileBaseName(pdfRevision)}.pdf`,
+                    content:new Uint8Array(content),
+                    sha256:createHash("sha256").update(content).digest("hex"),
+                    sizeBytes:content.length
+                },
+                select:quotationDocumentSummarySelect
+            })
+
+            const revision=await tx.quotationRevision.findUniqueOrThrow({
+                where:{
+                    id:params.revisionId
                 },
                 include:{
                     quotation:{
@@ -252,8 +309,51 @@ export const QuotationService = {
                 }
             })
 
-            return revision;
+            return {...revision,document};
+        },{
+            // Rendering happens inside the transaction, so allow more than the 5s default.
+            timeout:15000
         })
+    },
+    getIssuedDocument:async(params:TrevisionIdParams["params"],actor:Actor)=>{
+        const revision=await prisma.quotationRevision.findUnique({
+            where:{
+                id:params.revisionId
+            },
+            select:{
+                quotation:{
+                    select:{
+                        salespersonId:true
+                    }
+                },
+                document:{
+                    select:{
+                        fileName:true,
+                        content:true,
+                        sha256:true,
+                        sizeBytes:true
+                    }
+                }
+            }
+        })
+
+        if(!revision){
+            throw new ApiError(404,"Quotation revision not found");
+        }
+
+        // Same rule as getRevisions: admins, or the quotation's salesperson.
+        if(
+            actor.role!=="ADMIN" &&
+            actor.id!==revision.quotation.salespersonId
+        ){
+            throw new ApiError(403,"Forbidden: can't access this resource");
+        }
+
+        if(!revision.document){
+            throw new ApiError(404,"No issued document for this revision");
+        }
+
+        return revision.document;
     },
     
     editQuotationRevision: async (
@@ -451,6 +551,9 @@ export const QuotationService = {
                 },
             },
             items: true,
+            document: {
+                select: quotationDocumentSummarySelect,
+            },
             },
             orderBy: {
                 revisionNumber: "asc",

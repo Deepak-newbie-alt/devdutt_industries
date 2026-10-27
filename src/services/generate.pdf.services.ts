@@ -1,11 +1,28 @@
-import path from "node:path";
-
 import prisma from "../lib/prisma.js";
 import ApiError from "../utils/ApiError.js";
-import { generatePdf as writePdfFile } from "../utils/pdf-generator.js";
+import { renderPdf } from "../utils/pdf-generator.js";
 
 import type { TDocumentDefinitions } from "pdfmake/interfaces.js";
+import type { CompanySettings, Prisma } from "../generated/prisma/client.js";
 import type { TrevisionIdParams } from "../schemas/quotationSchema.js";
+
+// Revision data the PDF needs; shared by draft previews and issued documents.
+export const quotationPdfRevisionInclude = {
+    quotation: {
+        select: {
+            quotationNumber: true,
+        },
+    },
+    items: {
+        orderBy: {
+            displayOrder: "asc",
+        },
+    },
+} satisfies Prisma.QuotationRevisionInclude;
+
+type TquotationPdfRevision = Prisma.QuotationRevisionGetPayload<{
+    include: typeof quotationPdfRevisionInclude;
+}>;
 
 // Convert keys such as deliveryTerms into Delivery Terms.
 function formatLabel(key: string): string {
@@ -96,59 +113,10 @@ function formatJsonValue(value: unknown): string {
     }
     }
 
-    export const quotationPdfService = {
-    generate: async (
-        params: TrevisionIdParams["params"],
-        salespersonId: number
-    ) => {
-        const { revisionId } = params;
-
-        const [company, revision] = await Promise.all([
-        prisma.companySettings.findUnique({
-            where: { id: 1 },
-        }),
-
-        prisma.quotationRevision.findUnique({
-            where: { id: revisionId },
-            include: {
-            quotation: {
-                select: {
-                quotationNumber: true,
-                },
-            },
-            items: {
-                orderBy: {
-                displayOrder: "asc",
-                },
-            },
-            },
-        }),
-        ]);
-
-        if (!revision) {
-        throw new ApiError(404, "Quotation revision not found");
-        }
-
-        // Only the assigned salesperson can generate this PDF.
-        if (revision.salespersonId !== salespersonId) {
-        throw new ApiError(
-            403,
-            "Forbidden: you cannot access this quotation"
-        );
-        }
-
-        // Generate documents only for editable revisions.
-        if (revision.quotationRevisionStatus !== "DRAFT") {
-        throw new ApiError(
-            409,
-            "PDF generation is only allowed for draft revisions"
-        );
-        }
-
-        if (!company) {
-        throw new ApiError(404, "Company settings not found");
-        }
-
+    function buildQuotationDocDefinition(
+        company: CompanySettings,
+        revision: TquotationPdfRevision
+    ): TDocumentDefinitions {
         const currency = revision.currency;
 
         const companyAddress = [
@@ -442,27 +410,32 @@ function formatJsonValue(value: unknown): string {
             layout: "lightHorizontalLines",
             },
 
+            // Keep the closing note and signatory together on one page.
             {
-            text: [
-                "Thank you for your interest in ",
-                { text: company.companyName, bold: true },
-                ".",
+            unbreakable: true,
+            stack: [
+                {
+                text: [
+                    "Thank you for your interest in ",
+                    { text: company.companyName, bold: true },
+                    ".",
+                ],
+                alignment: "center",
+                margin: [0, 14, 0, 10],
+                style: "smallText",
+                },
+                {
+                text: `For ${company.companyName}`,
+                alignment: "right",
+                bold: true,
+                margin: [0, 6, 0, 24],
+                },
+                {
+                text: "Authorized Signatory",
+                alignment: "right",
+                style: "smallText",
+                },
             ],
-            alignment: "center",
-            margin: [0, 20, 0, 20],
-            style: "smallText",
-            },
-
-            {
-            text: `For ${company.companyName}`,
-            alignment: "right",
-            bold: true,
-            margin: [0, 12, 0, 30],
-            },
-            {
-            text: "Authorized Signatory",
-            alignment: "right",
-            style: "smallText",
             },
         ],
 
@@ -507,34 +480,81 @@ function formatJsonValue(value: unknown): string {
         },
 
         defaultStyle: {
-            font: "Roboto",
+            font: "NotoSans",
             fontSize: 9,
             lineHeight: 1.25,
         },
         };
 
+        return docDefinition;
+    }
+
+    // File name without extension, e.g. QT-2026-00004-rev-1.
+    export function getQuotationFileBaseName(
+        revision: TquotationPdfRevision
+    ): string {
         const safeQuotationNumber =
         revision.quotation.quotationNumber.replace(
             /[^a-zA-Z0-9_-]/g,
             "_"
         );
 
-        // Each revision gets its own file.
-        const fileName =
-        `${safeQuotationNumber}-rev-${revision.revisionNumber}.pdf`;
+        return `${safeQuotationNumber}-rev-${revision.revisionNumber}`;
+    }
 
-        const outputPath = path.resolve(
-        process.cwd(),
-        "uploads",
-        "quotations",
-        fileName
+    export function renderQuotationPdf(
+        company: CompanySettings,
+        revision: TquotationPdfRevision
+    ): Promise<Buffer> {
+        return renderPdf(buildQuotationDocDefinition(company, revision));
+    }
+
+    export const quotationPdfService = {
+    // Draft preview: rendered in memory and never stored.
+    generate: async (
+        params: TrevisionIdParams["params"],
+        salespersonId: number
+    ) => {
+        const { revisionId } = params;
+
+        const [company, revision] = await Promise.all([
+        prisma.companySettings.findUnique({
+            where: { id: 1 },
+        }),
+
+        prisma.quotationRevision.findUnique({
+            where: { id: revisionId },
+            include: quotationPdfRevisionInclude,
+        }),
+        ]);
+
+        if (!revision) {
+        throw new ApiError(404, "Quotation revision not found");
+        }
+
+        // Only the assigned salesperson can generate this PDF.
+        if (revision.salespersonId !== salespersonId) {
+        throw new ApiError(
+            403,
+            "Forbidden: you cannot access this quotation"
         );
+        }
 
-        await writePdfFile(docDefinition, outputPath);
+        // Generate documents only for editable revisions.
+        if (revision.quotationRevisionStatus !== "DRAFT") {
+        throw new ApiError(
+            409,
+            "PDF generation is only allowed for draft revisions"
+        );
+        }
+
+        if (!company) {
+        throw new ApiError(404, "Company settings not found");
+        }
 
         return {
-        filePath: outputPath,
-        fileName,
+        buffer: await renderQuotationPdf(company, revision),
+        fileName: `${getQuotationFileBaseName(revision)}-draft.pdf`,
         };
     },
 };

@@ -190,10 +190,6 @@ const quotationRevisionBodySchema= z.object({
 
         validUntil:validUntilSchema,
 
-        pdfUrl: z
-            .url("Please provide a valid PDF URL")
-            .optional(),
-
         cgstRate:taxRateSchema
             .optional(),
 
@@ -210,8 +206,7 @@ const quotationRevisionBodySchema= z.object({
 
 export const createQuotationSchema = z.object({
     body:quotationRevisionBodySchema.omit({
-        quotationRevisionStatus:true,
-        pdfUrl:true
+        quotationRevisionStatus:true
     }).superRefine(validateTaxRates),
     params:z.object({
             inquiryId:z
@@ -224,12 +219,8 @@ export const createQuotationSchema = z.object({
 
 export type TcreateQuotation=z.infer<typeof createQuotationSchema>;
 
+// The issued PDF is generated on the server; the client sends no body.
 export const sendQuotationSchema=z.object({
-    body:z.object({
-        pdfUrl:z
-        .url("Please provide an valid url")
-    }),
-
     params:revisionIdParamsSchema.shape.params
 })
 
@@ -238,8 +229,7 @@ export type TsendQuotation=z.infer<typeof sendQuotationSchema>;
 export const editQuotationSchema=z.object({
     params:sendQuotationSchema.shape.params,
     body:quotationRevisionBodySchema.omit({
-        quotationRevisionStatus:true,
-        pdfUrl:true
+        quotationRevisionStatus:true
     }).superRefine(validateTaxRates)
 })
 
