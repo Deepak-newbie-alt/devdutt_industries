@@ -2,12 +2,22 @@ import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
 import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
 import ApiError from "../utils/ApiError.js";
+import { CustomerOtpService } from "./customer.otp.services.js";
 
 
 
 export const InquiryService={
     createInquiry:async(body:TcreateInquiryInput["body"])=>{
+        // Counted outside the transaction so a wrong code is recorded even if creation fails.
+        await CustomerOtpService.checkCode(body.challengeId,body.code,{
+            purpose:"INQUIRY_SUBMISSION",
+            phoneNumber:body.phoneNumber
+        });
+
         return await prisma.$transaction(async(tx)=>{
+            // The code is used up only if the inquiry is created.
+            await CustomerOtpService.consume(tx,body.challengeId);
+
             const inquiry=await tx.inquiry.create({
             data:{
                 productId:body.productId,

@@ -1,6 +1,20 @@
 import z from "zod";
 import { InquiryStatus } from "../generated/prisma/enums.js";
 
+// Indian mobile number without country code; shared with customer OTP requests.
+export const customerPhoneSchema=z
+    .string()
+    .regex(/^[6-9]\d{9}$/, "Invalid phone number");
+
+// Proof of phone ownership, checked and consumed by the action itself.
+export const otpVerificationSchema=z.object({
+    challengeId:z
+    .uuid("Invalid verification challenge"),
+    code:z
+    .string()
+    .regex(/^\d{6}$/,"Verification code must be 6 digits")
+})
+
 export const createInquirySchema=z.object({
     body:z.object({
         productId:z
@@ -8,14 +22,12 @@ export const createInquirySchema=z.object({
         .number()
         .int("Product Id must be an integer")
         .positive("Product id must be positive"),
-        phoneNumber:z
-        .string()
-        .regex(/^[6-9]\d{9}$/, "Invalid phone number"),
+        phoneNumber:customerPhoneSchema,
         requirement:z
         .string()
         .min(1,"This field is required")
         .max(1200,"Keep the the requirement under 1200")
-    })
+    }).extend(otpVerificationSchema.shape)
 })
 
 export type TcreateInquiryInput=z.infer<typeof createInquirySchema>;

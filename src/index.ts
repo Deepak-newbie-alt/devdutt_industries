@@ -9,14 +9,20 @@ import quotationRoutes from "./routes/quotation.routes.js";
 import userRoutes from "./routes/users.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import companySettingRoutes from "./routes/company.settings.routes.js";
+import customerOtpRoutes from "./routes/customer.otp.routes.js";
 
 //jobs
 import {startQuotationExpiryJob} from "./jobs/expireQuotationRevisions.js"
+import {startCustomerOtpCleanupJob} from "./jobs/cleanupCustomerOtpChallenges.js"
+import { getTrustProxySetting } from "./lib/trustProxy.js";
 
 import { errorHandler } from "./middlewares/errorMiddleware.js";
 import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
+
+// Must match the real proxy topology; see src/lib/trustProxy.ts.
+app.set("trust proxy", getTrustProxySetting());
 
 app.use(express.json());
 app.use(clerkMiddleware());
@@ -34,6 +40,7 @@ app.use("/api/v1/quotations",quotationRoutes);
 app.use("/api/v1/users",userRoutes);
 app.use("/api/v1/orders",orderRoutes);
 app.use("/api/v1/company-settings",companySettingRoutes);
+app.use("/api/v1/customer-otp",customerOtpRoutes);
 
 app.use(errorHandler);
 
@@ -42,3 +49,4 @@ app.listen(PORT, () => {
 });
 
 startQuotationExpiryJob();
+startCustomerOtpCleanupJob();

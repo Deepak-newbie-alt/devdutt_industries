@@ -4,7 +4,7 @@ import type { TchangeUserRole, TcreateUserInput, TidParams, TlistUsersQuery, Tup
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 
 import { catchAsync } from "../utils/catchAsync.js";
-import { UserService, UserServiceError } from "../services/user.services.js";
+import { UserService } from "../services/user.services.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import { getAuth } from "@clerk/express";
@@ -43,9 +43,9 @@ export const getCurrentUser =
             const { isAuthenticated, userId } = getAuth(req);
 
             if (!isAuthenticated || !userId) {
-                throw new UserServiceError(
-                    "Authentication required.",
-                    401
+                throw new ApiError(
+                    401,
+                    "Authentication required."
                 );
             }
 

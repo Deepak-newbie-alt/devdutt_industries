@@ -6,8 +6,10 @@ import type {
     TquotationIdParams,
     TquotationItem,
     TrevisionIdParams,
-    TsendQuotation
+    TsendQuotation,
+    TcustomerRevisionResponse
 } from "../schemas/quotationSchema.js";
+import { CustomerOtpService } from "./customer.otp.services.js";
 import { createHash } from "node:crypto";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
@@ -562,30 +564,40 @@ export const QuotationService = {
 
         return revisions;
         },
-    requestRevision:async(params:TrevisionIdParams["params"])=>{
+    requestRevision:async(params:TcustomerRevisionResponse["params"],body:TcustomerRevisionResponse["body"])=>{
         const {revisionId}=params;
 
-        const revision=await prisma.quotationRevision.updateMany({
-            where:{
-                    id:revisionId,
-                    quotationRevisionStatus:"SENT",
-                    validUntil:{
-                        gte:getTodayInIndiaDbDate()
+        await CustomerOtpService.checkCode(body.challengeId,body.code,{
+            purpose:"QUOTATION_REQUEST_REVISION",
+            resourceId:revisionId
+        });
+
+        // Transaction so the code is used up only if the status change succeeds.
+        return await prisma.$transaction(async(tx)=>{
+            await CustomerOtpService.consume(tx,body.challengeId);
+
+            const revision=await tx.quotationRevision.updateMany({
+                where:{
+                        id:revisionId,
+                        quotationRevisionStatus:"SENT",
+                        validUntil:{
+                            gte:getTodayInIndiaDbDate()
+                        }
+                    },
+                    data:{
+                        quotationRevisionStatus:"REVISION_REQUESTED",
                     }
-                },
-                data:{
-                    quotationRevisionStatus:"REVISION_REQUESTED",
-                }
+            })
+
+            if(revision.count==0){
+                throw new ApiError(409,"Only sent quotations can have revision requests")
+            }
+
+            return {
+                revisionId,
+                quotationRevisionStatus: "REVISION_REQUESTED"
+            };
         })
-
-        if(revision.count==0){
-            throw new ApiError(409,"Only sent quotations can have revision requests")
-        }
-
-        return {
-            revisionId,
-            quotationRevisionStatus: "REVISION_REQUESTED"
-        };
     },
     createRevision:async(params:TquotationIdParams["params"],salespersonId:number)=>{
         const {quotationId}=params;
@@ -690,10 +702,17 @@ export const QuotationService = {
             return newRevision;
         });
     },
-    acceptRevision:async(params:TrevisionIdParams["params"])=>{
+    acceptRevision:async(params:TcustomerRevisionResponse["params"],body:TcustomerRevisionResponse["body"])=>{
         const {revisionId}=params;
 
+        await CustomerOtpService.checkCode(body.challengeId,body.code,{
+            purpose:"QUOTATION_ACCEPT",
+            resourceId:revisionId
+        });
+
         return await prisma.$transaction(async(tx)=>{
+            await CustomerOtpService.consume(tx,body.challengeId);
+
             const result=await tx.quotationRevision.updateMany({
                 where:{
                     id:revisionId,
@@ -765,10 +784,17 @@ export const QuotationService = {
             };
         })
     },
-    rejectRevision:async(params:TrevisionIdParams["params"])=>{
+    rejectRevision:async(params:TcustomerRevisionResponse["params"],body:TcustomerRevisionResponse["body"])=>{
         const {revisionId}=params;
 
+        await CustomerOtpService.checkCode(body.challengeId,body.code,{
+            purpose:"QUOTATION_REJECT",
+            resourceId:revisionId
+        });
+
         return await prisma.$transaction(async(tx)=>{
+            await CustomerOtpService.consume(tx,body.challengeId);
+
             const result=await tx.quotationRevision.updateMany({
                 where:{
                     id:revisionId,

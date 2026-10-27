@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/express";
 import prisma from "../lib/prisma.js";
 import type { TchangeUserRole, TcreateUserInput, TidParams, TlistUsersQuery, TupdateProfile, TupdateUserStatus } from "../schemas/userSchema.js";
 import { Prisma, UserRole, UserStatus } from "../generated/prisma/client.js";
+import ApiError from "../utils/ApiError.js";
 
 
 // --------------------------------------------------
@@ -20,22 +21,6 @@ const userSelect = {
     createdAt: true,
     updatedAt: true,
 } satisfies Prisma.UserSelect;
-
-
-// --------------------------------------------------
-// Service error
-// Your centralized error handler can use statusCode.
-// --------------------------------------------------
-
-export class UserServiceError extends Error {
-    constructor(
-        message: string,
-        public statusCode: number
-    ) {
-        super(message);
-        this.name = "UserServiceError";
-    }
-}
 
 
 // --------------------------------------------------
@@ -82,9 +67,9 @@ export const UserService = {
         });
 
         if (existingUser) {
-            throw new UserServiceError(
-                "A user with this email or phone already exists.",
-                409
+            throw new ApiError(
+                409,
+                "A user with this email or phone already exists."
             );
         }
 
@@ -155,9 +140,9 @@ export const UserService = {
         });
 
         if (!user) {
-            throw new UserServiceError(
-                "No application user is linked to this Clerk account.",
-                404
+            throw new ApiError(
+                404,
+                "No application user is linked to this Clerk account."
             );
         }
 
@@ -175,9 +160,9 @@ export const UserService = {
         });
 
         if (!user) {
-            throw new UserServiceError(
-                "User not found.",
-                404
+            throw new ApiError(
+                404,
+                "User not found."
             );
         }
 
@@ -292,11 +277,11 @@ export const UserService = {
                     }
                 );
             } catch {
-                throw new UserServiceError(
+                throw new ApiError(
+                    502,
                     "The profile was saved in PostgreSQL, " +
                     "but syncing the name to Clerk failed. " +
-                    "Retry the synchronization.",
-                    502
+                    "Retry the synchronization."
                 );
             }
         }
@@ -345,11 +330,11 @@ export const UserService = {
                     );
                 }
             } catch {
-                throw new UserServiceError(
+                throw new ApiError(
+                    502,
                     "The database status was updated, " +
                     "but Clerk synchronization failed. " +
-                    "Retry the operation.",
-                    502
+                    "Retry the operation."
                 );
             }
         }

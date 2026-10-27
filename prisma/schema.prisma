@@ -64,6 +64,13 @@ enum QuotationRevisionStatus {
   EXPIRED
 }
 
+enum CustomerOtpPurpose {
+  INQUIRY_SUBMISSION
+  QUOTATION_ACCEPT
+  QUOTATION_REJECT
+  QUOTATION_REQUEST_REVISION
+}
+
 enum OrderStatus {
   CONFIRMED
   IN_PRODUCTION
@@ -396,4 +403,31 @@ model CompanySettings {
   updatedAt DateTime @updatedAt
 
   @@map("companysettings")
+}
+
+// One OTP sent to a customer. Bound to a purpose, a target phone and (for quotations) a revision.
+// Only the HMAC of the code is stored.
+model CustomerOtpChallenge {
+  id      String             @id @default(uuid()) @db.Uuid
+  purpose CustomerOtpPurpose
+
+  // Null for placeholder challenges created for ineligible or unknown quotations.
+  phoneNumber String? @db.VarChar(15)
+  // Quotation revision id for quotation purposes; null for inquiry submission. No FK by design.
+  resourceId  Int?
+
+  codeHash      String    @db.Char(64)
+  attempts      Int       @default(0)
+  // Set only after the SMS is delivered; unsent challenges are never usable.
+  sentAt        DateTime?
+  expiresAt     DateTime
+  consumedAt    DateTime?
+  requestIpHash String    @db.Char(64)
+
+  createdAt DateTime @default(now())
+
+  @@index([purpose, phoneNumber, createdAt])
+  @@index([resourceId, createdAt])
+  @@index([requestIpHash, createdAt])
+  @@map("customerotpchallenges")
 }

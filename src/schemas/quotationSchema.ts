@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getTodayInIndiaDateString } from "../utils/dateOnly.js";
+import { otpVerificationSchema } from "./inquirySchema.js";
 
 const moneySchema = z
   .string()
@@ -87,6 +88,14 @@ export const revisionIdParamsSchema=z.object({
 })
 
 export type TrevisionIdParams=z.infer<typeof revisionIdParamsSchema>;
+
+// Customer accept/reject/request-revision: the OTP is checked and consumed by the action.
+export const customerRevisionResponseSchema=z.object({
+    params:revisionIdParamsSchema.shape.params,
+    body:otpVerificationSchema
+})
+
+export type TcustomerRevisionResponse=z.infer<typeof customerRevisionResponseSchema>;
 
 const quotationItemSchema = z.object({
     name: z
