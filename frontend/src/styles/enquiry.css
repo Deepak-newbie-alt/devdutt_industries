@@ -269,3 +269,19 @@
 .status + .enquiry-form {
   margin-top: var(--space-4);
 }
+
+/* Help for a quotation step that can't be done online (missing PDF, lost link). */
+.quotation-support {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
+}
+
+.quotation-support p {
+  margin-bottom: var(--space-2);
+}
+
+.quotation-support .button-row {
+  margin-top: var(--space-3);
+}

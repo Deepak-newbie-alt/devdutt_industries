@@ -52,4 +52,5 @@ export function quotationSummary(quotation: QuotationState) {
   }
 }
 
-export const LOST_LINK_HINT = "Can't find the link? Contact us using the details below and we'll send it again.";
+// List cards are brief; the detail page shows how to reach us.
+export const LOST_LINK_HINT = "Can't find the link? Open the details for ways to reach us.";

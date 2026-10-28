@@ -5,7 +5,8 @@ import { getCustomerInquiry, getCustomerQuotationPdf } from "../api/inquiries";
 import { LoadError } from "../components/ui/LoadError";
 import { LoadingState } from "../components/ui/LoadingState";
 import { StatusMessage } from "../components/ui/StatusMessage";
-import { INQUIRY_STATUS, LOST_LINK_HINT, quotationSummary, revisionBadge } from "../features/inquiries/customerStatus";
+import { INQUIRY_STATUS, quotationSummary, revisionBadge } from "../features/inquiries/customerStatus";
+import { QuotationSupport } from "../features/inquiries/QuotationSupport";
 import { useHistorySession, type HistorySession } from "../features/inquiries/historySession";
 import { downloadPdf, openPdf } from "../features/quotations/pdfFiles";
 import { useApiQuery } from "../hooks/useApiQuery";
@@ -43,11 +44,16 @@ function timelineLabel(event: CustomerTimelineEvent) {
 function RevisionPdf({
   inquiryId,
   revision,
+  pdf,
   session,
+  onMissing,
 }: {
   inquiryId: number;
   revision: CustomerQuotationRevision;
+  pdf: NonNullable<CustomerQuotationRevision["document"]>;
   session: HistorySession;
+  // The server no longer has it: shown like a version that never had one.
+  onMissing: () => void;
 }) {
   const { end } = useHistorySession();
   const [busy, setBusy] = useState<"view" | "download" | null>(null);
@@ -55,11 +61,7 @@ function RevisionPdf({
   // Set synchronously, so a second click before the re-render can't start another request.
   const pending = useRef(false);
 
-  if (!revision.document) {
-    return <p className="muted">The PDF for this version isn't available. Contact us using the details below.</p>;
-  }
-
-  const fallbackName = revision.document.fileName;
+  const fallbackName = pdf.fileName;
   const load = () => getCustomerQuotationPdf(inquiryId, revision.revisionNumber, session.accessToken);
 
   async function run(action: "view" | "download") {
@@ -81,7 +83,12 @@ function RevisionPdf({
         return;
       }
 
-      setError(failure.status === 404 ? "The PDF for this version isn't available. Contact us using the details below." : failure.message);
+      if (failure.status === 404) {
+        onMissing();
+        return;
+      }
+
+      setError(failure.message);
     } finally {
       pending.current = false;
       setBusy(null);
@@ -111,14 +118,30 @@ function RevisionPdf({
 
 function RevisionItem({
   inquiryId,
+  quotationNumber,
   revision,
   session,
 }: {
   inquiryId: number;
+  quotationNumber: string;
   revision: CustomerQuotationRevision;
   session: HistorySession;
 }) {
   const badge = revisionBadge(revision);
+  const [pdfMissing, setPdfMissing] = useState(false);
+  const pdf = pdfMissing ? null : revision.document;
+
+  // Versions sent before PDFs were kept have none; we never generate a stand-in.
+  const reasons = [
+    ...(pdf
+      ? []
+      : [
+          `The PDF for quotation ${quotationNumber} (revision ${revision.revisionNumber}) isn't available online. Contact us and our team will send you a copy.`,
+        ]),
+    ...(revision.isCurrent && revision.canRespond
+      ? [`Can't find the link for quotation ${quotationNumber}? Contact us and we'll send it again.`]
+      : []),
+  ];
 
   return (
     <li className={revision.isCurrent ? "revision-item revision-item--current" : "revision-item"}>
@@ -132,15 +155,24 @@ function RevisionItem({
       <p className="history-card__meta muted">Valid until {formatDateOnly(revision.validUntil)}</p>
 
       {revision.isCurrent ? (
-        <>
-          <p>{quotationSummary(revision)}</p>
-          {revision.canRespond && <p className="muted">{LOST_LINK_HINT}</p>}
-        </>
+        <p>{quotationSummary(revision)}</p>
       ) : (
         <p className="muted">Replaced by a newer version. Shown for your records.</p>
       )}
 
-      <RevisionPdf inquiryId={inquiryId} revision={revision} session={session} />
+      {pdf && (
+        <RevisionPdf
+          inquiryId={inquiryId}
+          revision={revision}
+          pdf={pdf}
+          session={session}
+          onMissing={() => setPdfMissing(true)}
+        />
+      )}
+
+      {reasons.length > 0 && (
+        <QuotationSupport quotationNumber={quotationNumber} revisionNumber={revision.revisionNumber} reasons={reasons} />
+      )}
     </li>
   );
 }
@@ -184,7 +216,13 @@ function InquiryDetail({ inquiry, session }: { inquiry: CustomerInquiryDetail; s
         {inquiry.quotation ? (
           <ol className="revision-list">
             {inquiry.quotation.revisions.map((revision) => (
-              <RevisionItem key={revision.revisionNumber} inquiryId={inquiry.id} revision={revision} session={session} />
+              <RevisionItem
+                key={revision.revisionNumber}
+                inquiryId={inquiry.id}
+                quotationNumber={inquiry.quotation!.quotationNumber}
+                revision={revision}
+                session={session}
+              />
             ))}
           </ol>
         ) : (
