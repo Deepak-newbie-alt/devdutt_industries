@@ -30,6 +30,16 @@ export const getCompanySettings = catchAsync(
     }
 );
 
+export const getPublicCompanyInfo = catchAsync(
+    async (_req, res: Response) => {
+        const data = await companySettingsService.getPublicCompanyInfo();
+
+        res.status(200).json(
+            new ApiResponse(200,"Company information fetched successfully",data)
+        );
+    }
+);
+
 export const updateCompanySettings = catchAsync<ValidatedRequest<TupdateCompanySettings>>(
     async (req, res: Response) => {
 
