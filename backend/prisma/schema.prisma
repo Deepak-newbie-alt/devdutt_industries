@@ -52,9 +52,20 @@ enum InquiryActivityType {
   CUSTOMER_CONTACTED
   NOTE_ADDED
   STATUS_CHANGED
+  // OTHER closures go through an admin: request by the salesperson, then the decision.
+  CLOSURE_REQUESTED
+  CLOSURE_APPROVED
+  CLOSURE_REJECTED
 }
 
-// Why a salesperson closed an inquiry by hand; OTHER needs an explanatory note.
+enum InquiryClosureRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Why a salesperson closed an inquiry by hand; OTHER needs an explanatory note
+// and an admin's approval (see InquiryClosureRequest).
 enum InquiryClosureReason {
   DUPLICATE
   CUSTOMER_UNREACHABLE
@@ -91,21 +102,23 @@ enum OrderStatus {
 }
 
 model User {
-  id              Int                 @id @default(autoincrement())
-  clerkId String? @unique
-  name            String
-  email           String              @unique @db.VarChar(255)
-  phone           String              @unique @db.VarChar(20)
-  passwordHash    String?
-  role            UserRole
-  status          UserStatus          @default(ACTIVE)
-  inquiries       Inquiry[]
-  inquiryActivity InquiryActivity[]
-  quotations      Quotation[]
-  revisions       QuotationRevision[]
-  orderActivities OrderActivity[]
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id                      Int                     @id @default(autoincrement())
+  clerkId                 String?                 @unique
+  name                    String
+  email                   String                  @unique @db.VarChar(255)
+  phone                   String                  @unique @db.VarChar(20)
+  passwordHash            String?
+  role                    UserRole
+  status                  UserStatus              @default(ACTIVE)
+  inquiries               Inquiry[]
+  inquiryActivity         InquiryActivity[]
+  quotations              Quotation[]
+  revisions               QuotationRevision[]
+  orderActivities         OrderActivity[]
+  closureRequestsMade     InquiryClosureRequest[] @relation("ClosureRequestsMade")
+  closureRequestsReviewed InquiryClosureRequest[] @relation("ClosureRequestsReviewed")
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
 
   @@map("users")
 }
@@ -185,33 +198,56 @@ model ProductBrochure {
 }
 
 model Inquiry {
-  id              Int               @id @default(autoincrement())
+  id              Int                     @id @default(autoincrement())
   productId       Int
-  product         Product           @relation(fields: [productId], references: [id])
+  product         Product                 @relation(fields: [productId], references: [id])
   salespersonId   Int?
-  salesperson     User?             @relation(fields: [salespersonId], references: [id], onDelete: SetNull)
-  requirement     String            @db.VarChar(1200)
+  salesperson     User?                   @relation(fields: [salespersonId], references: [id], onDelete: SetNull)
+  requirement     String                  @db.VarChar(1200)
   phoneNumber     String
-  status          InquiryStatus     @default(OPEN)
+  status          InquiryStatus           @default(OPEN)
   inquiryActivity InquiryActivity[]
   quotation       Quotation?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  closureRequests InquiryClosureRequest[]
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
 
   @@map("inquiries")
 }
 
-model InquiryActivity {
-  id            Int                 @id @default(autoincrement())
+// Audit record of an OTHER closure request and the admin's decision. Restrict keeps it from
+// being removed by deleting the inquiry or either user.
+model InquiryClosureRequest {
+  id            Int                         @id @default(autoincrement())
   inquiryId     Int
-  inquiry       Inquiry             @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  inquiry       Inquiry                     @relation(fields: [inquiryId], references: [id], onDelete: Restrict)
+  requestedById Int
+  requestedBy   User                        @relation("ClosureRequestsMade", fields: [requestedById], references: [id], onDelete: Restrict)
+  note          String                      @db.VarChar(350)
+  status        InquiryClosureRequestStatus @default(PENDING)
+  reviewedById  Int?
+  reviewedBy    User?                       @relation("ClosureRequestsReviewed", fields: [reviewedById], references: [id], onDelete: Restrict)
+  reviewNote    String?                     @db.VarChar(350)
+  reviewedAt    DateTime?
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+
+  @@index([status, createdAt])
+  @@index([inquiryId, status])
+  @@map("inquiryclosurerequests")
+}
+
+model InquiryActivity {
+  id            Int                   @id @default(autoincrement())
+  inquiryId     Int
+  inquiry       Inquiry               @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
   salespersonId Int?
-  salesperson   User?               @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
+  salesperson   User?                 @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
   activityType  InquiryActivityType
   // Set only on manual closures.
   closureReason InquiryClosureReason?
-  note          String?             @db.VarChar(350)
-  createdAt     DateTime            @default(now())
+  note          String?               @db.VarChar(350)
+  createdAt     DateTime              @default(now())
 
   @@map("inquiryactivities")
 }
@@ -250,12 +286,12 @@ model QuotationRevision {
   productName           String @db.VarChar(200)
   machineSpecifications Json
 
-  terms         Json
-  validUntil    DateTime @db.Date
+  terms                   Json
+  validUntil              DateTime @db.Date
   // SHA-256 of the customer response-link token; the token itself is never stored.
-  customerAccessTokenHash String? @unique @db.Char(64)
-  salespersonId Int
-  salesperson   User     @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
+  customerAccessTokenHash String?  @unique @db.Char(64)
+  salespersonId           Int
+  salesperson             User     @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
 
   items QuotationItem[]
 
@@ -397,14 +433,14 @@ model CompanySettings {
 
   companyName String @db.VarChar(200)
 
-  addressLine1 String @db.VarChar(255)
+  addressLine1 String  @db.VarChar(255)
   addressLine2 String? @db.VarChar(255)
-  city         String @db.VarChar(100)
-  state        String @db.VarChar(100)
-  postalCode   String @db.VarChar(20)
-  country      String @default("India") @db.VarChar(100)
+  city         String  @db.VarChar(100)
+  state        String  @db.VarChar(100)
+  postalCode   String  @db.VarChar(20)
+  country      String  @default("India") @db.VarChar(100)
 
-  phone   String @db.VarChar(20)
+  phone   String  @db.VarChar(20)
   email   String? @db.VarChar(255)
   website String? @db.VarChar(255)
 

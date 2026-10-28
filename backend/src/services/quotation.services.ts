@@ -19,20 +19,47 @@ import { CustomerOtpService } from "./customer.otp.services.js";
 import { createHash } from "node:crypto";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
-import { lockInquiry } from "./inquiry.services.js";
+import { hasPendingClosureRequest, lockInquiry, PENDING_CLOSURE_MESSAGE } from "./inquiry.services.js";
 import {
     getQuotationFileBaseName,
     quotationPdfRevisionInclude,
     renderQuotationPdf
 } from "./generate.pdf.services.js";
 
-// A closed inquiry's draft or change request can't restart the quotation. The row lock
-// makes this wait for, or block, a concurrent close of the same inquiry.
+// A closed inquiry's draft or change request can't restart the quotation, and nothing moves
+// forward while a closure request awaits an admin. The row lock makes this wait for, or
+// block, a concurrent close, closure request or decision on the same inquiry.
 const assertInquiryInProgress=async(tx:Prisma.TransactionClient,inquiryId:number)=>{
     const inquiry=await lockInquiry(tx,inquiryId);
 
     if(inquiry?.status!=="IN_PROGRESS"){
         throw new ApiError(409,"This inquiry is closed, so its quotation can't be changed or sent");
+    }
+
+    if(await hasPendingClosureRequest(tx,inquiryId)){
+        throw new ApiError(409,PENDING_CLOSURE_MESSAGE);
+    }
+}
+
+// Customer accept/reject close the inquiry; locking it before the revision keeps the same
+// lock order as closing, closure requests and sending (inquiry first, then revision).
+// An unknown revision locks nothing and fails in the caller's conditional update.
+const lockRevisionInquiry=async(tx:Prisma.TransactionClient,revisionId:number)=>{
+    const revision=await tx.quotationRevision.findUnique({
+        where:{
+            id:revisionId
+        },
+        select:{
+            quotation:{
+                select:{
+                    inquiryId:true
+                }
+            }
+        }
+    });
+
+    if(revision){
+        await lockInquiry(tx,revision.quotation.inquiryId);
     }
 }
 
@@ -63,15 +90,8 @@ export const QuotationService = {
                 }).format(new Date())
             );
 
-            const inquiry=await tx.inquiry.findUnique({
-                where:{
-                    id:inquiryId
-                },
-                select:{
-                    status:true,
-                    salespersonId:true
-                }
-            })
+            // Locked like every other closure or quotation change on this inquiry.
+            const inquiry=await lockInquiry(tx,inquiryId);
 
             if(!inquiry){
                 throw new ApiError(404,"Inquiry not found");
@@ -83,6 +103,10 @@ export const QuotationService = {
 
             if(inquiry.salespersonId!==salespersonId){
                 throw new ApiError(403,"Inquiry is assigned to a different salesperson")
+            }
+
+            if(await hasPendingClosureRequest(tx,inquiryId)){
+                throw new ApiError(409,PENDING_CLOSURE_MESSAGE);
             }
 
             // Generate yearly sequential quotation number
@@ -870,6 +894,8 @@ export const QuotationService = {
         return await prisma.$transaction(async(tx)=>{
             await CustomerOtpService.consume(tx,body.challengeId);
 
+            await lockRevisionInquiry(tx,revisionId);
+
             const result=await tx.quotationRevision.updateMany({
                 where:{
                     id:revisionId,
@@ -953,6 +979,8 @@ export const QuotationService = {
 
         return await prisma.$transaction(async(tx)=>{
             await CustomerOtpService.consume(tx,body.challengeId);
+
+            await lockRevisionInquiry(tx,revisionId);
 
             const result=await tx.quotationRevision.updateMany({
                 where:{

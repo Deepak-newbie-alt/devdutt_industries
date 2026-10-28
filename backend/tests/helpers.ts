@@ -33,6 +33,25 @@ export async function rejectsWith(promise: Promise<unknown>, statusCode: number,
     });
 }
 
+// Starts two operations together and checks that exactly one wins and the other loses with a
+// 409. Any other failure (a crash, a missing file) fails the test instead of passing as a lost
+// race. Alternate `secondFirst` between rounds: a fast operation started first can finish
+// before the other begins, which would hide a missing lock.
+export async function raceOnce(first: () => Promise<unknown>, second: () => Promise<unknown>, secondFirst: boolean) {
+    const settled = await Promise.allSettled(secondFirst ? [second(), first()] : [first(), second()]);
+    const [a, b] = secondFirst ? [settled[1]!, settled[0]!] : [settled[0]!, settled[1]!];
+    const outcome = `${a.status}/${b.status}`;
+
+    assert.notEqual(a.status === "fulfilled", b.status === "fulfilled", `exactly one should win: ${outcome}`);
+    const loser = a.status === "rejected" ? a : b.status === "rejected" ? b : null;
+    assert.ok(
+        loser?.reason instanceof ApiError && loser.reason.statusCode === 409,
+        `the losing operation should fail with 409, got: ${String(loser?.reason)}`
+    );
+
+    return outcome;
+}
+
 // Runs an OTP request and returns the code the console sender logged for it.
 export async function withSmsCode<T>(request: () => Promise<T>): Promise<{ result: T; code: string; to: string }> {
     const original = console.log;
@@ -69,9 +88,17 @@ export class Fixtures {
     }
 
     async salesperson() {
+        return this.staff("SALESPERSON");
+    }
+
+    async admin() {
+        return this.staff("ADMIN");
+    }
+
+    private async staff(role: "ADMIN" | "SALESPERSON") {
         const key = this.next();
         const user = await prisma.user.create({
-            data: { name: `Test salesperson ${key}`, email: `test-${key}@example.test`, phone: `test-${key}`, role: "SALESPERSON" }
+            data: { name: `Test ${role.toLowerCase()} ${key}`, email: `test-${key}@example.test`, phone: `test-${key}`, role }
         });
         this.users.push(user.id);
         return user;
@@ -185,6 +212,8 @@ export class Fixtures {
             where: { OR: [{ resourceId: { in: revisionIds } }, { phoneNumber: { in: phones } }] }
         });
         await prisma.quotation.deleteMany({ where: quotationWhere });
+        // Closure requests restrict deleting their inquiry, so they go first.
+        await prisma.inquiryClosureRequest.deleteMany({ where: { inquiryId: { in: inquiries.map((inquiry) => inquiry.id) } } });
         await prisma.inquiry.deleteMany({ where: inquiryWhere });
         await prisma.product.deleteMany({ where: { id: { in: this.products } } });
         if (this.categoryId !== null) await prisma.category.delete({ where: { id: this.categoryId } });

@@ -161,9 +161,42 @@ export type StaffInquiry = {
   updatedAt: string;
   product: Product;
   quotation: { id: number; quotationNumber: string } | null;
+  // GET /inquiries/:id only: the pending closure request, if any (at most one).
+  closureRequests?: PendingClosureRequest[];
 };
 
-export type InquiryActivityType = "CREATED" | "CLAIMED" | "CUSTOMER_CONTACTED" | "NOTE_ADDED" | "STATUS_CHANGED";
+export type PendingClosureRequest = { id: number; note: string; createdAt: string; requestedBy: StaffName };
+
+export type InquiryActivityType =
+  | "CREATED"
+  | "CLAIMED"
+  | "CUSTOMER_CONTACTED"
+  | "NOTE_ADDED"
+  | "STATUS_CHANGED"
+  | "CLOSURE_REQUESTED"
+  | "CLOSURE_APPROVED"
+  | "CLOSURE_REJECTED";
+
+export type ClosureRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+// GET /inquiry-closure-requests (admin).
+export type ClosureRequest = {
+  id: number;
+  inquiryId: number;
+  note: string;
+  status: ClosureRequestStatus;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  inquiry: { id: number; status: InquiryStatus; product: { id: number; name: string } };
+  requestedBy: StaffName;
+  reviewedBy: StaffName | null;
+};
+
+export type ClosureRequestList = {
+  requests: ClosureRequest[];
+  meta: { page: number; limit: number; totalPages: number; totalRequests: number };
+};
 
 export type InquiryClosureReason =
   | "DUPLICATE"

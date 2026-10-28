@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { catchAsync } from "../utils/catchAsync.js";
 import type { ValidatedRequest } from '../types/ValidatedRequest.js';
 import { InquiryService } from '../services/inquiry.services.js';
-import type { TclaimInquiry, TcloseInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
+import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 
@@ -75,6 +75,15 @@ export const closeInquiry=catchAsync<ValidatedRequest<TcloseInquiry>>(async(req,
 
     res.status(201).json(
         new ApiResponse(201,"Inquiry closed",data)
+    )
+    return;
+})
+
+export const requestClosure=catchAsync<ValidatedRequest<TclosureRequest>>(async(req,res:Response)=>{
+    const data=await InquiryService.requestClosure(req.validated.params,req.validated.body,req.user!.id);
+
+    res.status(201).json(
+        new ApiResponse(201,"Closure requested; waiting for an admin's review",data)
     )
     return;
 })

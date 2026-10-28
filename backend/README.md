@@ -38,7 +38,7 @@ Express 5 + TypeScript API with PostgreSQL (Prisma 7). Staff sign in through Cle
 npm test
 ```
 
-Builds the app and the tests into `dist-test/`, then runs them with Node's built-in test runner. They cover request validation, inquiry submission, claiming, closing, and the quotation steps a closed inquiry blocks.
+Builds the app and the tests into `dist-test/`, then runs them with Node's built-in test runner. They cover request validation, inquiry submission, claiming, closing, closure requests and admin decisions, the quotation steps a closed inquiry blocks, and the races between them (for example a closure request against a quotation send).
 
 - They run against the database in `DATABASE_URL`: **use the development database only**. They refuse to run when `NODE_ENV=production`.
 - Each run creates its own users, products, inquiries and quotations, tagged with a run id, and deletes them at the end, including when a test fails.

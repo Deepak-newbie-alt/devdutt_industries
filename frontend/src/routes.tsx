@@ -115,6 +115,10 @@ export const router = createBrowserRouter([
                 path: "company",
                 lazy: async () => ({ Component: (await import("./pages/admin/CompanySettingsPage")).CompanySettingsPage }),
               },
+              {
+                path: "closure-requests",
+                lazy: async () => ({ Component: (await import("./pages/admin/ClosureRequestsPage")).ClosureRequestsPage }),
+              },
             ],
           },
           { path: "*", element: <NotFoundPage /> },

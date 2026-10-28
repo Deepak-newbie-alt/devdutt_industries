@@ -44,10 +44,15 @@ export const CLOSURE_REASON_LABELS: Record<InquiryClosureReason, string> = {
   OTHER: "Other",
 };
 
-// The note is optional, except for OTHER, where the backend requires it.
-export function closeInquiry(request: AuthedRequest, inquiryId: number, reason: InquiryClosureReason, note: string) {
+// Closes immediately with a named reason; the note is optional. OTHER isn't accepted here.
+export function closeInquiry(request: AuthedRequest, inquiryId: number, reason: Exclude<InquiryClosureReason, "OTHER">, note: string) {
   return request<{ inquiry: StaffInquiry }>(`/inquiries/${inquiryId}/close`, {
     method: "PATCH",
     body: note ? { reason, note } : { reason },
   });
+}
+
+// Closing for another reason: an admin approves or rejects; the inquiry stays open meanwhile.
+export function requestClosure(request: AuthedRequest, inquiryId: number, note: string) {
+  return request<unknown>(`/inquiries/${inquiryId}/closure-requests`, { method: "POST", body: { note } });
 }

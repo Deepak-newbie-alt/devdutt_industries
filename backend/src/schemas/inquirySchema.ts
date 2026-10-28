@@ -108,30 +108,37 @@ export const inquiryActivitySchema=z.object({
 
 export type TinquiryActivity=z.infer<typeof inquiryActivitySchema>;
 
+// The named reasons close immediately; OTHER needs an admin's approval through a closure request.
 export const closeInquirySchema=z.object({
     body:z.object({
         reason:z
-        .enum(InquiryClosureReason,{error:"Choose a reason for closing the inquiry"}),
+        .enum(InquiryClosureReason,{error:"Choose a reason for closing the inquiry"})
+        .exclude(["OTHER"],{error:"Closing for another reason needs an admin's approval: send a closure request instead"}),
         note:z
         .string()
         .trim()
         .max(350,"Note is too long")
         .optional()
-    }).superRefine((body,ctx)=>{
-        // OTHER says nothing on its own, so it must be explained.
-        if(body.reason==="OTHER" && !body.note){
-            ctx.addIssue({
-                code:"custom",
-                path:["note"],
-                message:"Explain why the inquiry is being closed"
-            })
-        }
     }),
 
     params:inquiryActivitySchema.shape.params
 })
 
 export type TcloseInquiry=z.infer<typeof closeInquirySchema>;
+
+export const closureRequestSchema=z.object({
+    body:z.object({
+        note:z
+        .string()
+        .trim()
+        .min(1,"Explain why the inquiry should be closed")
+        .max(350,"Note is too long")
+    }),
+
+    params:inquiryActivitySchema.shape.params
+})
+
+export type TclosureRequest=z.infer<typeof closureRequestSchema>;
 
 export const getInquiryActivitySchema=z.object({
     params:inquiryActivitySchema.shape.params

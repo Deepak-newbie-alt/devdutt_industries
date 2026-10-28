@@ -12,6 +12,7 @@ const SALESPERSON_LINKS = [
 const ADMIN_LINKS = [
   ["/app/overview", "Overview"],
   ["/app/inquiries", "Inquiries"],
+  ["/app/closure-requests", "Closure requests"],
   ["/app/orders", "Orders"],
   ["/app/products", "Products"],
   ["/app/categories", "Categories"],

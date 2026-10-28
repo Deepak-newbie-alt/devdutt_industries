@@ -8,6 +8,9 @@ const LABELS: Record<InquiryActivityType, string> = {
   CUSTOMER_CONTACTED: "Customer contacted",
   NOTE_ADDED: "Note",
   STATUS_CHANGED: "Status changed",
+  CLOSURE_REQUESTED: "Closure requested",
+  CLOSURE_APPROVED: "Closure approved",
+  CLOSURE_REJECTED: "Closure request rejected",
 };
 
 type ActivityTimelineProps = {

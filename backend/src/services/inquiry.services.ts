@@ -1,7 +1,7 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
 import type { InquiryStatus } from "../generated/prisma/enums.js";
-import type { TclaimInquiry, TcloseInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
+import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
 import { CustomerOtpService } from "./customer.otp.services.js";
@@ -22,6 +22,34 @@ export const lockInquiry=async(tx:Prisma.TransactionClient,inquiryId:number)=>{
 
     return rows[0] ?? null;
 }
+
+// The checks below are only meaningful while the caller holds lockInquiry: every path that
+// sends a quotation or creates/decides a closure request takes the same lock first.
+
+// Sent, unexpired quotations the customer can still accept or reject.
+export const countAwaitingCustomer=(tx:Prisma.TransactionClient,inquiryId:number)=>
+    tx.quotationRevision.count({
+        where:{
+            quotation:{
+                inquiryId
+            },
+            quotationRevisionStatus:"SENT",
+            validUntil:{
+                gte:getTodayInIndiaDbDate()
+            }
+        }
+    });
+
+export const hasPendingClosureRequest=async(tx:Prisma.TransactionClient,inquiryId:number)=>
+    (await tx.inquiryClosureRequest.count({
+        where:{
+            inquiryId,
+            status:"PENDING"
+        }
+    }))>0;
+
+export const AWAITING_CUSTOMER_MESSAGE="A quotation is waiting for the customer's response. Close the inquiry after they respond or the quotation expires.";
+export const PENDING_CLOSURE_MESSAGE="A closure request for this inquiry is waiting for an admin's review";
 
 
 export const InquiryService={
@@ -136,6 +164,18 @@ export const InquiryService={
                     select:{
                         id:true,
                         quotationNumber:true
+                    }
+                },
+                // At most one; lets the page show that a closure awaits an admin.
+                closureRequests:{
+                    where:{
+                        status:"PENDING"
+                    },
+                    select:{
+                        id:true,
+                        note:true,
+                        createdAt:true,
+                        requestedBy:staffNameSelect
                     }
                 }
             }
@@ -290,22 +330,15 @@ export const InquiryService={
                 throw new ApiError(409,"Inquiry cannot be closed");
             }
 
+            // An admin decides a pending request; closing here would leave it dangling.
+            if(await hasPendingClosureRequest(tx,inquiryId)){
+                throw new ApiError(409,PENDING_CLOSURE_MESSAGE);
+            }
+
             // The customer can still accept or reject a sent, unexpired quotation; their
             // response closes the inquiry, or it can be closed here once the quotation expires.
-            const awaitingCustomer=await tx.quotationRevision.count({
-                where:{
-                    quotation:{
-                        inquiryId
-                    },
-                    quotationRevisionStatus:"SENT",
-                    validUntil:{
-                        gte:getTodayInIndiaDbDate()
-                    }
-                }
-            })
-
-            if(awaitingCustomer>0){
-                throw new ApiError(409,"A quotation is waiting for the customer's response. Close the inquiry after they respond or the quotation expires.");
+            if(await countAwaitingCustomer(tx,inquiryId)>0){
+                throw new ApiError(409,AWAITING_CUSTOMER_MESSAGE);
             }
 
             await tx.inquiry.update({
@@ -334,6 +367,54 @@ export const InquiryService={
         })
 
         return {inquiry,activity};
+        })
+    },
+    // OTHER closures: the inquiry stays in progress until an admin approves the request.
+    requestClosure:async(params:TclosureRequest["params"],body:TclosureRequest["body"],salespersonId:number)=>{
+        const {inquiryId}=params;
+        const {note}=body;
+
+        return await prisma.$transaction(async(tx)=>{
+            const inquiry=await lockInquiry(tx,inquiryId);
+
+            if(!inquiry){
+                throw new ApiError(404,"Inquiry not found");
+            }
+
+            if(inquiry.salespersonId!==salespersonId){
+                throw new ApiError(403,"Forbidden can't access other salesperson inquiry");
+            }
+
+            if(inquiry.status!=="IN_PROGRESS"){
+                throw new ApiError(409,"Only in-progress inquiries can be closed");
+            }
+
+            if(await hasPendingClosureRequest(tx,inquiryId)){
+                throw new ApiError(409,PENDING_CLOSURE_MESSAGE);
+            }
+
+            if(await countAwaitingCustomer(tx,inquiryId)>0){
+                throw new ApiError(409,AWAITING_CUSTOMER_MESSAGE);
+            }
+
+            const request=await tx.inquiryClosureRequest.create({
+                data:{
+                    inquiryId,
+                    requestedById:salespersonId,
+                    note
+                }
+            })
+
+            const activity=await tx.inquiryActivity.create({
+                data:{
+                    inquiryId,
+                    salespersonId,
+                    activityType:"CLOSURE_REQUESTED",
+                    note
+                }
+            })
+
+            return {request,activity};
         })
     },
     getActivities: async (

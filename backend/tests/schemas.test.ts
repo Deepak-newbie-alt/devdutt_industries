@@ -1,7 +1,8 @@
 // Request validation rules that the frontend relies on. No database needed.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { closeInquirySchema, createInquirySchema } from "../src/schemas/inquirySchema.js";
+import { closeInquirySchema, closureRequestSchema, createInquirySchema } from "../src/schemas/inquirySchema.js";
+import { reviewClosureRequestSchema } from "../src/schemas/inquiryClosureRequestSchema.js";
 import { createProductImageSchema } from "../src/schemas/productImagesSchema.js";
 import { createProductVideoSchema } from "../src/schemas/productVideosSchema.js";
 import { createProductBrochureSchema } from "../src/schemas/productBrochureSchema.js";
@@ -17,22 +18,39 @@ describe("closing an inquiry", () => {
         assert.deepEqual(issuePaths(closeInquirySchema.safeParse({ params, body: { reason: "BORED" } })), ["body.reason"]);
     });
 
-    it("requires a note for OTHER, ignoring blank space", () => {
-        assert.deepEqual(issuePaths(closeInquirySchema.safeParse({ params, body: { reason: "OTHER" } })), ["body.note"]);
-        assert.deepEqual(issuePaths(closeInquirySchema.safeParse({ params, body: { reason: "OTHER", note: "   " } })), ["body.note"]);
+    it("refuses OTHER, which needs an admin-approved closure request", () => {
+        const result = closeInquirySchema.safeParse({ params, body: { reason: "OTHER", note: "Bought elsewhere" } });
+        assert.deepEqual(issuePaths(result), ["body.reason"]);
+        assert.match(result.error?.issues[0]?.message ?? "", /closure request/);
     });
 
-    it("accepts other reasons without a note, and trims notes", () => {
+    it("accepts the named reasons without a note, and trims notes", () => {
         const plain = closeInquirySchema.parse({ params, body: { reason: "DUPLICATE" } });
         assert.equal(plain.body.note, undefined);
 
-        const other = closeInquirySchema.parse({ params, body: { reason: "OTHER", note: "  Bought elsewhere  " } });
-        assert.equal(other.body.note, "Bought elsewhere");
+        const noted = closeInquirySchema.parse({ params, body: { reason: "NOT_OUR_PRODUCT", note: "  Needs a 6-inch bender  " } });
+        assert.equal(noted.body.note, "Needs a 6-inch bender");
     });
 
     it("limits the note to 350 characters", () => {
         assert.equal(closeInquirySchema.safeParse({ params, body: { reason: "DUPLICATE", note: "x".repeat(350) } }).success, true);
         assert.equal(closeInquirySchema.safeParse({ params, body: { reason: "DUPLICATE", note: "x".repeat(351) } }).success, false);
+    });
+});
+
+describe("closure requests", () => {
+    it("require an explanation, trimmed, up to 350 characters", () => {
+        assert.deepEqual(issuePaths(closureRequestSchema.safeParse({ params, body: {} })), ["body.note"]);
+        assert.deepEqual(issuePaths(closureRequestSchema.safeParse({ params, body: { note: "   " } })), ["body.note"]);
+        assert.equal(closureRequestSchema.safeParse({ params, body: { note: "x".repeat(351) } }).success, false);
+        assert.equal(closureRequestSchema.parse({ params, body: { note: "  Customer moved abroad  " } }).body.note, "Customer moved abroad");
+    });
+
+    it("take an optional review note, with or without a body", () => {
+        const review = { params: { requestId: "1" } };
+        assert.equal(reviewClosureRequestSchema.parse(review).body.reviewNote, undefined);
+        assert.equal(reviewClosureRequestSchema.parse({ ...review, body: { reviewNote: " Agreed " } }).body.reviewNote, "Agreed");
+        assert.equal(reviewClosureRequestSchema.safeParse({ ...review, body: { reviewNote: "x".repeat(351) } }).success, false);
     });
 });
 

@@ -626,6 +626,19 @@
   align-items: stretch;
 }
 
+/* Admin closure requests: one panel per request. */
+.request-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.request-list .panel {
+  margin: 0;
+}
+
 .link-panel {
   margin-bottom: var(--space-4);
   padding: var(--space-5);

@@ -8,6 +8,7 @@ import {
   CLOSURE_REASON_LABELS,
   getInquiry,
   getInquiryActivities,
+  requestClosure,
   type ActivityKind,
 } from "../../api/staffInquiries";
 import { useEmployee } from "../../auth/EmployeeContext";
@@ -119,11 +120,14 @@ function CloseInquiryForm({ inquiryId, onClosed }: { inquiryId: number; onClosed
     );
   }
 
+  // Other reasons go to an admin; the enquiry stays open until they approve.
+  const needsApproval = reason === "OTHER";
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const text = note.trim();
     const nextReasonError = reason ? null : "Choose why you're closing this enquiry.";
-    const nextNoteError = reason === "OTHER" && !text ? "Explain the reason, so the history shows why it was closed." : null;
+    const nextNoteError = needsApproval && !text ? "Explain the reason, so an admin can review it." : null;
 
     setReasonError(nextReasonError);
     setNoteError(nextNoteError);
@@ -136,7 +140,8 @@ function CloseInquiryForm({ inquiryId, onClosed }: { inquiryId: number; onClosed
     setSaving(true);
 
     try {
-      await closeInquiry(request, inquiryId, reason, text);
+      if (reason === "OTHER") await requestClosure(request, inquiryId, text);
+      else await closeInquiry(request, inquiryId, reason, text);
       onClosed();
     } catch (caught) {
       const fieldErrors = caught instanceof ApiError ? caught.fieldErrors : [];
@@ -191,10 +196,12 @@ function CloseInquiryForm({ inquiryId, onClosed }: { inquiryId: number; onClosed
       </div>
       <div className="field">
         <label htmlFor="close-note" className="field__label">
-          Note {reason !== "OTHER" && <span className="muted">(optional)</span>}
+          {needsApproval ? "Explanation" : "Note"} {!needsApproval && <span className="muted">(optional)</span>}
         </label>
         <p id="close-note-hint" className="field__hint">
-          {reason === "OTHER" ? "Required when the reason is Other." : "Anything the history should record."}
+          {needsApproval
+            ? "Required. An admin reviews closures for other reasons; the enquiry stays open until they approve."
+            : "Anything the history should record."}
         </p>
         <textarea
           id="close-note"
@@ -222,7 +229,7 @@ function CloseInquiryForm({ inquiryId, onClosed }: { inquiryId: number; onClosed
       )}
       <div className="button-row">
         <button type="submit" className="button button--primary" disabled={saving}>
-          {saving ? "Closing…" : "Close enquiry"}
+          {needsApproval ? (saving ? "Sending…" : "Send for approval") : saving ? "Closing…" : "Close enquiry"}
         </button>
         <button type="button" className="button button--secondary" disabled={saving} onClick={() => setOpen(false)}>
           Cancel
@@ -327,6 +334,9 @@ export function InquiryDetailPage() {
   const isSalesperson = employee.role === "SALESPERSON";
   const isOwner = data.salespersonId === employee.id;
   const canClaim = isSalesperson && data.status === "OPEN" && data.salespersonId === null;
+  // While an admin reviews a closure request, the enquiry can't be closed or quoted.
+  const pendingClosure = data.closureRequests?.[0] ?? null;
+  const canWork = isSalesperson && isOwner && data.status === "IN_PROGRESS";
 
   return (
     <div className="container page-section">
@@ -397,6 +407,26 @@ export function InquiryDetailPage() {
         <aside className="detail-side">
           {canClaim && <ClaimPanel inquiry={data} onClaimed={refresh} />}
 
+          {pendingClosure && (
+            <section className="panel panel--warning" aria-labelledby="closure-request-heading">
+              <h2 id="closure-request-heading" className="panel__title">
+                Closure waiting for approval
+              </h2>
+              <p>
+                {pendingClosure.requestedBy.id === employee.id ? "You" : pendingClosure.requestedBy.name} asked to close this enquiry on{" "}
+                {formatDateTime(pendingClosure.createdAt)}:
+              </p>
+              <p className="preserve-lines">{pendingClosure.note}</p>
+              {employee.role === "ADMIN" ? (
+                <Link to="/app/closure-requests" className="button button--primary">
+                  Review closure requests
+                </Link>
+              ) : (
+                <p className="muted">An admin will approve or reject it. Until then the quotation can't be created, changed or sent.</p>
+              )}
+            </section>
+          )}
+
           <section className="panel" aria-labelledby="quotation-heading">
             <h2 id="quotation-heading" className="panel__title">
               Quotation
@@ -405,7 +435,7 @@ export function InquiryDetailPage() {
               <Link to={`/app/quotations/${data.quotation.id}`} className="button button--primary">
                 Open {data.quotation.quotationNumber}
               </Link>
-            ) : isSalesperson && isOwner && data.status === "IN_PROGRESS" ? (
+            ) : canWork && !pendingClosure ? (
               <>
                 <p className="muted">No quotation yet.</p>
                 <Link to={`/app/inquiries/${data.id}/quotation/new`} className="button button--accent">
@@ -418,10 +448,8 @@ export function InquiryDetailPage() {
           </section>
 
           {/* A closed enquiry's history is final; the backend refuses new entries too. */}
-          {isSalesperson && isOwner && data.status === "IN_PROGRESS" && <ActivityForm inquiryId={data.id} onAdded={activities.reload} />}
-          {isSalesperson && isOwner && data.status === "IN_PROGRESS" && (
-            <CloseInquiryForm inquiryId={data.id} onClosed={refresh} />
-          )}
+          {canWork && <ActivityForm inquiryId={data.id} onAdded={activities.reload} />}
+          {canWork && !pendingClosure && <CloseInquiryForm inquiryId={data.id} onClosed={refresh} />}
         </aside>
       </div>
     </div>

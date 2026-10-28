@@ -1,5 +1,5 @@
 // Claiming, closing and quotation changes on an inquiry, and how they protect each other.
-import { Fixtures, newCustomerToken, prisma, rejectsWith, testIp, withSmsCode } from "./helpers.js";
+import { Fixtures, newCustomerToken, prisma, raceOnce, rejectsWith, testIp, withSmsCode } from "./helpers.js";
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { closeInquirySchema } from "../src/schemas/inquirySchema.js";
@@ -64,9 +64,9 @@ describe("closing an inquiry", () => {
         assert.equal(activity.note, null);
 
         const other = await myInquiry();
-        const result = await close(other.id, { reason: "OTHER", note: "Bought a used machine" });
-        assert.equal(result.activity.closureReason, "OTHER");
-        assert.equal(result.activity.note, "Bought a used machine");
+        const result = await close(other.id, { reason: "NOT_OUR_PRODUCT", note: "Needs a 6-inch bender" });
+        assert.equal(result.activity.closureReason, "NOT_OUR_PRODUCT");
+        assert.equal(result.activity.note, "Needs a 6-inch bender");
     });
 
     it("is refused for unassigned, someone else's, closed or missing inquiries", async () => {
@@ -172,16 +172,15 @@ describe("closing and sending at the same moment", () => {
     it("lets exactly one win and never leaves a closed inquiry with a sent quotation", async () => {
         await fixtures.ensureCompanySettings();
 
-        for (let round = 0; round < 5; round++) {
+        for (let round = 0; round < 8; round++) {
             const inquiry = await myInquiry();
             const { revision } = await fixtures.quotation(inquiry, owner, "DRAFT");
-            const [closed, sent] = await Promise.allSettled([
-                close(inquiry.id, { reason: "DUPLICATE" }),
-                QuotationService.sendQuotation({ revisionId: revision.id }, owner)
-            ]);
+            const outcome = await raceOnce(
+                () => close(inquiry.id, { reason: "DUPLICATE" }),
+                () => QuotationService.sendQuotation({ revisionId: revision.id }, owner),
+                round % 2 === 1
+            );
 
-            const outcome = `close ${closed.status}, send ${sent.status}`;
-            assert.notEqual(closed.status === "fulfilled", sent.status === "fulfilled", outcome);
             const finalInquiry = await statusOf(inquiry.id);
             const finalRevision = await revisionStatusOf(revision.id);
             assert.ok(!(finalInquiry === "CLOSED" && finalRevision === "SENT"), `${outcome}: ${finalInquiry} + ${finalRevision}`);
