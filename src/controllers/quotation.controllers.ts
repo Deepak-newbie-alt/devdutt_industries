@@ -11,7 +11,7 @@ export const createQuotation=catchAsync<ValidatedRequest<TcreateQuotation>>(asyn
     const data=await QuotationService.createQuotation(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(201).json(
-        new ApiResponse(201,"Quotationcreated successfully",data)
+        new ApiResponse(201,"Quotation created successfully",data)
     )
     return;
 })

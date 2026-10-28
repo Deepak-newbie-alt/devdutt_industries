@@ -8,9 +8,10 @@ export const errorHandler=(err:unknown,req:Request,res:Response,next:NextFunctio
     console.error(err);
     if(err instanceof Prisma.PrismaClientKnownRequestError){
         if(err.code==="P2002"){
+            // Prisma's message names internal constraints; it is logged above, not returned.
             res.status(409).json({
                 success:false,
-                message:err.message,
+                message:"This record already exists",
                 err:[]
             });
 

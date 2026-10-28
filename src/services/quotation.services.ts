@@ -538,6 +538,9 @@ export const QuotationService = {
                 throw new ApiError(403,"Forbidden, can't access other salesperson's resource");
             }
 
+            if(revisionExists.quotationRevisionStatus!=="DRAFT"){
+                throw new ApiError(409,"Only draft revisions can be edited");
+            }
 
             const revision = await tx.quotationRevision.update({
                 where: {
