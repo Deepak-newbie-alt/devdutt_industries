@@ -95,6 +95,9 @@ export function QuotationPage() {
   const quotationNumber = first.quotation.quotationNumber;
   const inquiryId = first.quotation.inquiryId;
   const isOwner = employee.role === "SALESPERSON" && first.quotation.salespersonId === employee.id;
+  // A closed enquiry's draft or change request can't move forward; the backend refuses it too.
+  const inquiryClosed = first.quotation.inquiry.status === "CLOSED";
+  const canChange = isOwner && !inquiryClosed;
   const latest = all[all.length - 1] as QuotationRevision;
   const newestFirst = [...all].reverse();
   const disabled = busy !== null;
@@ -110,9 +113,11 @@ export function QuotationPage() {
       <>
         {status === "DRAFT" && isOwner && (
           <>
-            <Link to={`/app/quotations/${id}/revisions/${revision.id}/edit`} className="button button--secondary">
-              Edit draft
-            </Link>
+            {canChange && (
+              <Link to={`/app/quotations/${id}/revisions/${revision.id}/edit`} className="button button--secondary">
+                Edit draft
+              </Link>
+            )}
             <button
               type="button"
               className="button button--secondary"
@@ -121,7 +126,7 @@ export function QuotationPage() {
             >
               {busy === `preview-${revision.id}` ? "Preparing PDF…" : "Preview PDF"}
             </button>
-            {askSend ? (
+            {!canChange ? null : askSend ? (
               <span className="confirm">
                 <span>Issue the PDF and create the customer link? The revision can't be edited afterwards.</span>
                 <button
@@ -190,7 +195,7 @@ export function QuotationPage() {
             </button>
           ))}
 
-        {status === "REVISION_REQUESTED" && isLatest && isOwner && (
+        {status === "REVISION_REQUESTED" && isLatest && canChange && (
           <button
             type="button"
             className="button button--accent"
@@ -251,9 +256,15 @@ export function QuotationPage() {
         <h1>{quotationNumber}</h1>
       </header>
 
-      {latest.quotationRevisionStatus === "REVISION_REQUESTED" && isOwner && (
+      {latest.quotationRevisionStatus === "REVISION_REQUESTED" && canChange && (
         <StatusMessage tone="info" title="The customer asked for changes">
           <p>Contact them to agree what should change, then create the next revision.</p>
+        </StatusMessage>
+      )}
+
+      {inquiryClosed && isOwner && (latest.quotationRevisionStatus === "DRAFT" || latest.quotationRevisionStatus === "REVISION_REQUESTED") && (
+        <StatusMessage tone="info" title="This enquiry is closed">
+          <p>The quotation can't be edited, sent or revised any more.</p>
         </StatusMessage>
       )}
 

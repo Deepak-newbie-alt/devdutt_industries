@@ -29,7 +29,7 @@ function excerpt(text: string, length = 110) {
 
 function assignedTo(inquiry: StaffInquiry, employeeId: number) {
   if (inquiry.salespersonId === null) return "Unassigned";
-  return inquiry.salespersonId === employeeId ? "You" : `Staff #${inquiry.salespersonId}`;
+  return inquiry.salespersonId === employeeId ? "You" : (inquiry.salesperson?.name ?? `Staff #${inquiry.salespersonId}`);
 }
 
 export function InquiryListPage() {

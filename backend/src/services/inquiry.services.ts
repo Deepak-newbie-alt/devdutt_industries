@@ -6,6 +6,14 @@ import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
 import { CustomerOtpService } from "./customer.otp.services.js";
 
+// The assigned or acting staff member's name, so screens can show names instead of ids.
+const staffNameSelect={
+    select:{
+        id:true,
+        name:true
+    }
+} satisfies Prisma.UserDefaultArgs;
+
 // Locks the inquiry row until the transaction ends, so closing it and moving its
 // quotation forward (send, new revision) can't interleave.
 export const lockInquiry=async(tx:Prisma.TransactionClient,inquiryId:number)=>{
@@ -86,6 +94,7 @@ export const InquiryService={
             },
             include: {
             product: true,
+            salesperson: staffNameSelect,
             quotation: {
                 select: {
                 id: true,
@@ -106,6 +115,7 @@ export const InquiryService={
             },
             include:{
                 product:true,
+                salesperson:staffNameSelect,
                 quotation:{
                     select:{
                         id:true,
@@ -193,6 +203,11 @@ export const InquiryService={
 
         }
 
+        // A closed inquiry's history is final.
+        if(inquiry.status!=="IN_PROGRESS"){
+            throw new ApiError(409,"Activity can only be added to in-progress inquiries");
+        }
+
         const activity=await prisma.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
@@ -221,6 +236,11 @@ export const InquiryService={
         if(inquiry.salespersonId!==salespersonId){
             throw new ApiError(403,"Forbidden can't access other salesperson inquiry");
 
+        }
+
+        // A closed inquiry's history is final.
+        if(inquiry.status!=="IN_PROGRESS"){
+            throw new ApiError(409,"Activity can only be added to in-progress inquiries");
         }
 
         const activity=await prisma.inquiryActivity.create({
@@ -343,6 +363,9 @@ export const InquiryService={
         const activities = await prisma.inquiryActivity.findMany({
             where: {
             inquiryId,
+            },
+            include: {
+            salesperson: staffNameSelect,
             },
             orderBy: {
             createdAt: "asc",

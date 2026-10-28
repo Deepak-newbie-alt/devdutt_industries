@@ -42,12 +42,18 @@ export function EditRevisionPage() {
   const back = `/app/quotations/${quotation}`;
   const revision = revisions.data.find((item) => item.id === revisionNumberId);
 
-  if (!revision || revision.quotationRevisionStatus !== "DRAFT" || revision.salespersonId !== employee.id) {
+  const inquiryClosed = revision?.quotation.inquiry.status === "CLOSED";
+
+  if (!revision || revision.quotationRevisionStatus !== "DRAFT" || revision.salespersonId !== employee.id || inquiryClosed) {
     return (
       <div className="container page-section narrow">
         <title>Edit quotation | Devdutt Industries Staff</title>
         <h1>This revision can't be edited</h1>
-        <p>Only your own draft revisions can be edited. Sent quotations are fixed; create a new revision instead.</p>
+        <p>
+          {inquiryClosed
+            ? "Its enquiry is closed, so the quotation can't be changed any more."
+            : "Only your own draft revisions can be edited. Sent quotations are fixed; create a new revision instead."}
+        </p>
         <Link to={back} className="button button--primary">
           Back to the quotation
         </Link>

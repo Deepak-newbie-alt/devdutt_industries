@@ -29,7 +29,9 @@ export function ActivityTimeline({ activities, currentEmployeeId }: ActivityTime
             <span className="timeline__meta">
               {formatDateTime(activity.createdAt)}
               {activity.salespersonId !== null &&
-                (activity.salespersonId === currentEmployeeId ? " · by you" : ` · staff #${activity.salespersonId}`)}
+                (activity.salespersonId === currentEmployeeId
+                  ? " · by you"
+                  : ` · by ${activity.salesperson?.name ?? `staff #${activity.salespersonId}`}`)}
             </span>
           </p>
           {activity.closureReason && <p className="timeline__note">Closed: {CLOSURE_REASON_LABELS[activity.closureReason]}</p>}

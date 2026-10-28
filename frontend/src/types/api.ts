@@ -145,11 +145,15 @@ export type Employee = {
 
 export type InquiryStatus = "OPEN" | "IN_PROGRESS" | "CLOSED";
 
+// A staff member as shown next to records they're assigned to or acted on.
+export type StaffName = { id: number; name: string };
+
 // GET /inquiries and GET /inquiries/:id (product included in full, plus the quotation link).
 export type StaffInquiry = {
   id: number;
   productId: number;
   salespersonId: number | null;
+  salesperson: StaffName | null;
   requirement: string;
   phoneNumber: string;
   status: InquiryStatus;
@@ -174,6 +178,8 @@ export type InquiryActivity = {
   id: number;
   inquiryId: number;
   salespersonId: number | null;
+  // Included by GET /inquiries/:id/activities; not in the response to adding an activity.
+  salesperson?: StaffName | null;
   activityType: InquiryActivityType;
   // Set only when a salesperson closed the inquiry by hand.
   closureReason: InquiryClosureReason | null;
@@ -224,7 +230,7 @@ export type QuotationRevision = {
   createdAt: string;
   updatedAt: string;
   items: QuotationItem[];
-  quotation: { inquiryId: number; quotationNumber: string; salespersonId: number };
+  quotation: { inquiryId: number; quotationNumber: string; salespersonId: number; inquiry: { status: InquiryStatus } };
   document: { id: number; fileName: string; sha256: string; sizeBytes: number; createdAt: string } | null;
   order: { id: number; orderNumber: string; status: OrderStatus } | null;
 };

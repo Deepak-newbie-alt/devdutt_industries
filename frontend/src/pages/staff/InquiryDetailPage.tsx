@@ -373,7 +373,7 @@ export function InquiryDetailPage() {
               </div>
               <div>
                 <dt>Assigned to</dt>
-                <dd>{data.salespersonId === null ? "Nobody yet" : isOwner ? "You" : `Staff #${data.salespersonId}`}</dd>
+                <dd>{data.salespersonId === null ? "Nobody yet" : isOwner ? "You" : (data.salesperson?.name ?? `Staff #${data.salespersonId}`)}</dd>
               </div>
             </dl>
             <h3 className="panel__subtitle">Requirement</h3>
@@ -417,7 +417,8 @@ export function InquiryDetailPage() {
             )}
           </section>
 
-          {isSalesperson && isOwner && <ActivityForm inquiryId={data.id} onAdded={activities.reload} />}
+          {/* A closed enquiry's history is final; the backend refuses new entries too. */}
+          {isSalesperson && isOwner && data.status === "IN_PROGRESS" && <ActivityForm inquiryId={data.id} onAdded={activities.reload} />}
           {isSalesperson && isOwner && data.status === "IN_PROGRESS" && (
             <CloseInquiryForm inquiryId={data.id} onClosed={refresh} />
           )}

@@ -547,6 +547,13 @@ export const QuotationService = {
             const revisionExists=await tx.quotationRevision.findUnique({
                 where:{
                     id:params.revisionId
+                },
+                include:{
+                    quotation:{
+                        select:{
+                            inquiryId:true
+                        }
+                    }
                 }
             })
 
@@ -561,6 +568,8 @@ export const QuotationService = {
             if(revisionExists.quotationRevisionStatus!=="DRAFT"){
                 throw new ApiError(409,"Only draft revisions can be edited");
             }
+
+            await assertInquiryInProgress(tx,revisionExists.quotation.inquiryId);
 
             const revision = await tx.quotationRevision.update({
                 where: {
@@ -669,6 +678,12 @@ export const QuotationService = {
                     inquiryId: true,
                     quotationNumber: true,
                     salespersonId: true,
+                    // Lets the page hide edit/send controls once the inquiry is closed.
+                    inquiry: {
+                        select: {
+                            status: true,
+                        },
+                    },
                 },
             },
             items: true,
