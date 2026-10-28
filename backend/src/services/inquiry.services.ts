@@ -1,7 +1,7 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
 import type { InquiryStatus } from "../generated/prisma/enums.js";
-import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
+import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TcustomerInquiryHistory, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
 import { CustomerOtpService } from "./customer.otp.services.js";
@@ -51,6 +51,9 @@ export const hasPendingClosureRequest=async(tx:Prisma.TransactionClient,inquiryI
 export const AWAITING_CUSTOMER_MESSAGE="A quotation is waiting for the customer's response. Close the inquiry after they respond or the quotation expires.";
 export const PENDING_CLOSURE_MESSAGE="A closure request for this inquiry is waiting for an admin's review";
 
+// Newest inquiries returned to a customer per verified lookup; the total is returned too.
+const CUSTOMER_HISTORY_LIMIT=50;
+
 
 export const InquiryService={
     createInquiry:async(body:TcreateInquiryInput["body"])=>{
@@ -97,6 +100,89 @@ export const InquiryService={
 
         return {inquiry,activity};
         })
+    },
+
+    // Customer-facing: only what the customer told us and where it stands. No staff,
+    // activity history, closure details, prices or link tokens.
+    getCustomerInquiryHistory:async(body:TcustomerInquiryHistory["body"])=>{
+        // Counted outside the transaction so a wrong code is recorded even if the lookup fails.
+        await CustomerOtpService.checkCode(body.challengeId,body.code,{
+            purpose:"INQUIRY_HISTORY_LOOKUP",
+            phoneNumber:body.phoneNumber
+        });
+
+        const {inquiries,totalInquiries}=await prisma.$transaction(async(tx)=>{
+            // Single use: the code is spent together with the read.
+            await CustomerOtpService.consume(tx,body.challengeId);
+
+            const where={phoneNumber:body.phoneNumber} satisfies Prisma.InquiryWhereInput;
+
+            const inquiries=await tx.inquiry.findMany({
+                where,
+                orderBy:[{createdAt:"desc"},{id:"desc"}],
+                take:CUSTOMER_HISTORY_LIMIT,
+                select:{
+                    id:true,
+                    createdAt:true,
+                    requirement:true,
+                    status:true,
+                    product:{
+                        select:{
+                            name:true
+                        }
+                    },
+                    quotation:{
+                        select:{
+                            quotationNumber:true,
+                            // Drafts are internal; the customer only sees what was sent to them.
+                            revisions:{
+                                where:{
+                                    quotationRevisionStatus:{not:"DRAFT"}
+                                },
+                                orderBy:{revisionNumber:"desc"},
+                                take:1,
+                                select:{
+                                    revisionNumber:true,
+                                    quotationRevisionStatus:true,
+                                    validUntil:true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const totalInquiries=await tx.inquiry.count({where});
+
+            return {inquiries,totalInquiries};
+        });
+
+        const today=getTodayInIndiaDbDate();
+
+        return {
+            inquiries:inquiries.map((inquiry)=>{
+                const revision=inquiry.quotation?.revisions[0];
+
+                return {
+                    id:inquiry.id,
+                    createdAt:inquiry.createdAt,
+                    requirement:inquiry.requirement,
+                    status:inquiry.status,
+                    product:inquiry.product,
+                    quotation:inquiry.quotation && revision ? {
+                        quotationNumber:inquiry.quotation.quotationNumber,
+                        revisionNumber:revision.revisionNumber,
+                        status:revision.quotationRevisionStatus,
+                        validUntil:revision.validUntil,
+                        // Same rule as getCustomerQuotation.
+                        canRespond:
+                            revision.quotationRevisionStatus==="SENT" &&
+                            revision.validUntil>=today
+                    } : null
+                };
+            }),
+            totalInquiries
+        };
     },
 
     getInquiries: async (

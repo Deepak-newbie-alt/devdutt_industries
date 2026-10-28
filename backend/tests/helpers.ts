@@ -139,9 +139,9 @@ export class Fixtures {
         this.inquiries.push(inquiryId);
     }
 
-    async inquiry(productId: number, status: InquiryStatus, salespersonId: number | null) {
+    async inquiry(productId: number, status: InquiryStatus, salespersonId: number | null, phoneNumber = newPhone()) {
         const inquiry = await prisma.inquiry.create({
-            data: { productId, phoneNumber: newPhone(), requirement: `Test inquiry ${this.next()}`, status, salespersonId }
+            data: { productId, phoneNumber, requirement: `Test inquiry ${this.next()}`, status, salespersonId }
         });
         this.inquiries.push(inquiry.id);
         return inquiry;

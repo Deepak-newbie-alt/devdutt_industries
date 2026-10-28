@@ -44,6 +44,11 @@ export function SiteHeader() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/my-inquiries" className={navLinkClass}>
+                My enquiries
+              </NavLink>
+            </li>
+            <li>
               <a href="#contact" className="site-nav__link">
                 Contact
               </a>

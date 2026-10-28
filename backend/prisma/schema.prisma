@@ -90,6 +90,8 @@ enum CustomerOtpPurpose {
   QUOTATION_ACCEPT
   QUOTATION_REJECT
   QUOTATION_REQUEST_REVISION
+  // Customer views their own inquiries; the code goes to the phone they enter.
+  INQUIRY_HISTORY_LOOKUP
 }
 
 enum OrderStatus {

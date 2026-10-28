@@ -1,4 +1,4 @@
-/* Enquiry page and the OTP step (also used by the quotation-response page). */
+/* Enquiry page, My enquiries, and the OTP step (also used by the quotation-response page). */
 
 .enquiry {
   display: grid;
@@ -128,4 +128,71 @@
 
 .enquiry-sent__reference {
   font-size: var(--text-lg);
+}
+
+/* My enquiries: the customer's own enquiries after verifying their number. */
+
+.history-heading:focus {
+  outline: none;
+}
+
+.history-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.history-card {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.history-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.history-card__product {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.history-card__meta {
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.history-card__requirement {
+  /* Keep the customer's line breaks; break long unbroken text instead of overflowing. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.history-card__quotation {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.history-card__quotation p {
+  margin-bottom: var(--space-1);
+}
+
+.history-empty {
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.history-actions {
+  margin-top: var(--space-5);
 }

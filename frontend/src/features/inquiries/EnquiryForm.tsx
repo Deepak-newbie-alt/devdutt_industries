@@ -5,27 +5,9 @@ import type { CreatedInquiry } from "../../types/api";
 import { OtpCodeStep } from "../otp/OtpCodeStep";
 import { useOtpChallenge } from "../otp/useOtpChallenge";
 import { StatusMessage } from "../../components/ui/StatusMessage";
+import { INDIAN_MOBILE, MAX_CODE_ATTEMPTS, normalisePhone, PHONE_ERROR } from "./phone";
 
 const REQUIREMENT_MAX = 1200;
-const INDIAN_MOBILE = /^[6-9]\d{9}$/;
-// The backend allows 5 wrong attempts per code; after that every attempt fails.
-const MAX_CODE_ATTEMPTS = 5;
-
-// Accepts "98765 43210", "+91 98765 43210", "09876543210" and keeps the 10-digit number.
-// Any other length keeps every digit so validation reports it instead of a different number being used.
-function normalisePhone(input: string) {
-  const digits = input.replace(/\D/g, "");
-
-  if (digits.length === 12 && digits.startsWith("91")) {
-    return digits.slice(2);
-  }
-
-  if (digits.length === 11 && digits.startsWith("0")) {
-    return digits.slice(1);
-  }
-
-  return digits;
-}
 
 type EnquiryFormProps = {
   productId: number;
@@ -59,9 +41,7 @@ export function EnquiryForm({ productId, onSubmitted }: EnquiryFormProps) {
     const text = requirement.trim();
     const nextRequirementError =
       text === "" ? "Describe what you need so our team can prepare a quotation." : null;
-    const nextPhoneError = INDIAN_MOBILE.test(phone)
-      ? null
-      : "Enter a 10-digit Indian mobile number, for example 98765 43210.";
+    const nextPhoneError = INDIAN_MOBILE.test(phone) ? null : PHONE_ERROR;
 
     setRequirementError(nextRequirementError);
     setPhoneError(nextPhoneError);

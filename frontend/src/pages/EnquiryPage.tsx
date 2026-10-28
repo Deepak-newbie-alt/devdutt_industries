@@ -47,6 +47,9 @@ function EnquirySent({ product, result, phone }: { product: Product; result: Cre
       <p className="enquiry-sent__reference">
         Enquiry reference: <strong>#{result.inquiry.id}</strong>
       </p>
+      <p>
+        You can check on it any time from <Link to="/my-inquiries">My enquiries</Link>.
+      </p>
       <div className="button-row">
         <Link to="/machines" className="button button--primary">
           Browse more machines

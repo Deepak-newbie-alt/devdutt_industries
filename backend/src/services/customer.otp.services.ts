@@ -23,15 +23,23 @@ const QUOTATION_PURPOSES = [
 
 type TquotationOtpPurpose = (typeof QUOTATION_PURPOSES)[number];
 
+// Codes sent to the phone number the customer types.
+type TphoneOtpPurpose = "INQUIRY_SUBMISSION" | "INQUIRY_HISTORY_LOOKUP";
+
 // Quotation codes are requested with the customer's link token, never a revision id.
 export type TotpTarget =
-    | { purpose: "INQUIRY_SUBMISSION"; phoneNumber: string }
+    | { purpose: TphoneOtpPurpose; phoneNumber: string }
     | { purpose: TquotationOtpPurpose; token: string };
 
 // Target after the link token is resolved; limits and locks are keyed on this.
 type TlimitTarget =
-    | { purpose: "INQUIRY_SUBMISSION"; phoneNumber: string }
+    | { purpose: TphoneOtpPurpose; phoneNumber: string }
     | { purpose: TquotationOtpPurpose; revisionId: number };
+
+const isPhoneTarget = <T extends { purpose: CustomerOtpPurpose }>(
+    target: T
+): target is Extract<T, { purpose: TphoneOtpPurpose }> =>
+    target.purpose === "INQUIRY_SUBMISSION" || target.purpose === "INQUIRY_HISTORY_LOOKUP";
 
 // What the action request implies; every field must match the challenge.
 export type TotpExpectation = {
@@ -112,7 +120,7 @@ async function resolveTarget(target: TotpTarget): Promise<{
     phoneNumber: string;
     resourceId: number | null;
 }> {
-    if (target.purpose === "INQUIRY_SUBMISSION") {
+    if (isPhoneTarget(target)) {
         return { limitTarget: target, phoneNumber: target.phoneNumber, resourceId: null };
     }
 
@@ -145,10 +153,12 @@ async function assertWithinLimits(
         throw tooManyRequests();
     }
 
-    if (target.purpose === "INQUIRY_SUBMISSION") {
+    // Each phone purpose has its own hourly limit and cooldown, so sending an enquiry
+    // and looking up past ones don't hold each other up; the IP limit covers both.
+    if (isPhoneTarget(target)) {
         const phoneCount = await tx.customerOtpChallenge.count({
             where: {
-                purpose: "INQUIRY_SUBMISSION",
+                purpose: target.purpose,
                 phoneNumber: target.phoneNumber,
                 createdAt: { gte: hourAgo }
             }
@@ -156,7 +166,7 @@ async function assertWithinLimits(
 
         const recentCount = await tx.customerOtpChallenge.count({
             where: {
-                purpose: "INQUIRY_SUBMISSION",
+                purpose: target.purpose,
                 phoneNumber: target.phoneNumber,
                 createdAt: { gte: cooldownStart }
             }
@@ -196,18 +206,18 @@ async function assertWithinLimits(
 export const CustomerOtpService = {
     requestChallenge: async (target: TotpTarget, ip: string) => {
         const requestIpHash = hmac(`ip:${ip}`);
-        const isInquiry = target.purpose === "INQUIRY_SUBMISSION";
+        const isPhone = isPhoneTarget(target);
 
         const { limitTarget, phoneNumber, resourceId } = await resolveTarget(target);
 
-        const targetKey = limitTarget.purpose === "INQUIRY_SUBMISSION"
+        const targetKey = isPhoneTarget(limitTarget)
             ? `${limitTarget.purpose}:${limitTarget.phoneNumber}`
             : `${limitTarget.purpose}:${limitTarget.revisionId}`;
 
         const lockKeys = [
             `otp:ip:${requestIpHash}`,
             `otp:target:${targetKey}`,
-            limitTarget.purpose === "INQUIRY_SUBMISSION"
+            isPhoneTarget(limitTarget)
                 ? `otp:phone:${limitTarget.phoneNumber}`
                 : `otp:revision:${limitTarget.revisionId}`
         ].sort();
@@ -224,7 +234,7 @@ export const CustomerOtpService = {
 
             // The link may have been reissued since the token was resolved; the revision lock
             // orders this check against revokeQuotationChallenges.
-            if (target.purpose !== "INQUIRY_SUBMISSION") {
+            if (!isPhoneTarget(target)) {
                 const linkStillCurrent = await tx.quotationRevision.count({
                     where: {
                         id: resourceId!,
@@ -301,7 +311,7 @@ export const CustomerOtpService = {
                 where: {
                     id: { not: challengeId },
                     purpose: target.purpose,
-                    ...(isInquiry ? { phoneNumber } : { resourceId }),
+                    ...(isPhone ? { phoneNumber } : { resourceId }),
                     createdAt: { lt: createdAt },
                     consumedAt: null,
                     expiresAt: { gt: sentAt }

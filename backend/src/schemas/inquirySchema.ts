@@ -32,6 +32,15 @@ export const createInquirySchema=z.object({
 
 export type TcreateInquiryInput=z.infer<typeof createInquirySchema>;
 
+// Customer's own inquiries, for the phone number the code was sent to.
+export const customerInquiryHistorySchema=z.object({
+    body:z.object({
+        phoneNumber:customerPhoneSchema
+    }).extend(otpVerificationSchema.shape)
+})
+
+export type TcustomerInquiryHistory=z.infer<typeof customerInquiryHistorySchema>;
+
 export const getInquiryQuerySchema=z.object({
     query:z.object({
             page:z

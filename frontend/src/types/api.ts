@@ -126,6 +126,30 @@ export type CustomerQuotation = {
   canRespond: boolean;
 };
 
+// POST /inquiries/customer/history. Only what the customer told us and where it stands:
+// no staff, notes, prices or quotation links.
+export type CustomerInquiry = {
+  id: number;
+  createdAt: string;
+  requirement: string;
+  status: "OPEN" | "IN_PROGRESS" | "CLOSED";
+  product: { name: string };
+  // The latest revision sent to the customer; null until one has been sent.
+  quotation: {
+    quotationNumber: string;
+    revisionNumber: number;
+    status: Exclude<QuotationRevisionStatus, "DRAFT">;
+    validUntil: string;
+    canRespond: boolean;
+  } | null;
+};
+
+export type CustomerInquiryHistory = {
+  // Newest first, at most 50; totalInquiries counts them all.
+  inquiries: CustomerInquiry[];
+  totalInquiries: number;
+};
+
 // ---- Employee workspace ----
 
 export type UserRole = "ADMIN" | "SALESPERSON";

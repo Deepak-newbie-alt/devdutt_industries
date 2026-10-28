@@ -2,12 +2,12 @@ import z from "zod";
 import { customerPhoneSchema } from "./inquirySchema.js";
 import { customerAccessTokenSchema } from "./quotationSchema.js";
 
-// Inquiry codes go to the phone the customer enters; quotation codes go to the
+// Inquiry and history codes go to the phone the customer enters; quotation codes go to the
 // phone already on the inquiry, so the client only presents its quotation link token.
 export const requestOtpChallengeSchema=z.object({
     body:z.discriminatedUnion("purpose",[
         z.object({
-            purpose:z.literal("INQUIRY_SUBMISSION"),
+            purpose:z.literal(["INQUIRY_SUBMISSION","INQUIRY_HISTORY_LOOKUP"]),
             phoneNumber:customerPhoneSchema
         }),
         z.object({

@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { catchAsync } from "../utils/catchAsync.js";
 import type { ValidatedRequest } from '../types/ValidatedRequest.js';
 import { InquiryService } from '../services/inquiry.services.js';
-import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
+import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TcustomerInquiryHistory, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 
@@ -11,6 +11,15 @@ export const createInquiry=catchAsync<ValidatedRequest<TcreateInquiryInput>>(asy
 
     res.status(201).json(
         new ApiResponse(201,"Inquiry created successfully",data)
+    )
+    return;
+})
+
+export const getCustomerInquiryHistory=catchAsync<ValidatedRequest<TcustomerInquiryHistory>>(async(req,res:Response)=>{
+    const data=await InquiryService.getCustomerInquiryHistory(req.validated.body);
+
+    res.status(200).json(
+        new ApiResponse(200,"Inquiries fetched successfully",data)
     )
     return;
 })

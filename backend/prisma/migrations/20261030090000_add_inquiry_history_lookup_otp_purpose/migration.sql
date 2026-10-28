@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "CustomerOtpPurpose" ADD VALUE 'INQUIRY_HISTORY_LOOKUP';
