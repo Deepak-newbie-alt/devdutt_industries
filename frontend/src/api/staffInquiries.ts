@@ -1,7 +1,7 @@
 // Employee inquiry endpoints. Each takes the signed-in employee's request function;
 // the backend decides what each role may see and do.
 import type { AuthedRequest } from "../auth/EmployeeContext";
-import type { InquiryActivity, InquiryStatus, StaffInquiry } from "../types/api";
+import type { InquiryActivity, InquiryClosureReason, InquiryStatus, StaffInquiry } from "../types/api";
 
 export const INQUIRY_PAGE_SIZE = 20;
 
@@ -34,6 +34,20 @@ export function addInquiryActivity(request: AuthedRequest, inquiryId: number, ki
   return request<InquiryActivity>(`/inquiries/${inquiryId}/${path}`, { method: "POST", body: { note } });
 }
 
-export function closeInquiry(request: AuthedRequest, inquiryId: number, note: string) {
-  return request<{ inquiry: StaffInquiry }>(`/inquiries/${inquiryId}/close`, { method: "PATCH", body: { note } });
+// Same values and order as the backend's InquiryClosureReason.
+export const CLOSURE_REASON_LABELS: Record<InquiryClosureReason, string> = {
+  DUPLICATE: "Duplicate enquiry",
+  CUSTOMER_UNREACHABLE: "Customer not responding",
+  CUSTOMER_NOT_INTERESTED: "Customer no longer needs it",
+  NOT_OUR_PRODUCT: "Requirement we can't supply",
+  INVALID_INQUIRY: "Spam or invalid details",
+  OTHER: "Other",
+};
+
+// The note is optional, except for OTHER, where the backend requires it.
+export function closeInquiry(request: AuthedRequest, inquiryId: number, reason: InquiryClosureReason, note: string) {
+  return request<{ inquiry: StaffInquiry }>(`/inquiries/${inquiryId}/close`, {
+    method: "PATCH",
+    body: note ? { reason, note } : { reason },
+  });
 }

@@ -1,9 +1,19 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
-import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
+import type { InquiryStatus } from "../generated/prisma/enums.js";
+import type { TclaimInquiry, TcloseInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
 import ApiError from "../utils/ApiError.js";
+import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
 import { CustomerOtpService } from "./customer.otp.services.js";
 
+// Locks the inquiry row until the transaction ends, so closing it and moving its
+// quotation forward (send, new revision) can't interleave.
+export const lockInquiry=async(tx:Prisma.TransactionClient,inquiryId:number)=>{
+    const rows=await tx.$queryRaw<{status:InquiryStatus;salespersonId:number|null}[]>`
+        SELECT "status", "salespersonId" FROM "inquiries" WHERE "id" = ${inquiryId} FOR UPDATE`;
+
+    return rows[0] ?? null;
+}
 
 
 export const InquiryService={
@@ -133,7 +143,9 @@ export const InquiryService={
             where:{
                 id:inquiryId,
                 status:"OPEN",
-                salespersonId:null
+                salespersonId:null,
+                // A quotation already belongs to someone; claiming would split ownership.
+                quotation:null
             },
             data:{
                 status:"IN_PROGRESS",
@@ -222,16 +234,12 @@ export const InquiryService={
 
         return activity;
     },
-    closeInquiry:async(params:TinquiryActivity["params"],body:TinquiryActivity["body"],salespersonId:number)=>{
+    closeInquiry:async(params:TcloseInquiry["params"],body:TcloseInquiry["body"],salespersonId:number)=>{
         const {inquiryId}=params;
-        const {note}=body;
+        const {reason,note}=body;
 
         return await prisma.$transaction(async(tx)=>{
-            const inquiryExists=await tx.inquiry.findUnique({
-                where:{
-                    id:inquiryId
-                }
-            })
+            const inquiryExists=await lockInquiry(tx,inquiryId);
 
             if(!inquiryExists){
                 throw new ApiError(404,"Inquiry not found");
@@ -242,25 +250,43 @@ export const InquiryService={
 
             }
 
-            const result=await tx.inquiry.updateMany({
+            if(inquiryExists.status!=="IN_PROGRESS"){
+                throw new ApiError(409,"Inquiry cannot be closed");
+            }
+
+            // The customer can still accept or reject a sent, unexpired quotation; their
+            // response closes the inquiry, or it can be closed here once the quotation expires.
+            const awaitingCustomer=await tx.quotationRevision.count({
+                where:{
+                    quotation:{
+                        inquiryId
+                    },
+                    quotationRevisionStatus:"SENT",
+                    validUntil:{
+                        gte:getTodayInIndiaDbDate()
+                    }
+                }
+            })
+
+            if(awaitingCustomer>0){
+                throw new ApiError(409,"A quotation is waiting for the customer's response. Close the inquiry after they respond or the quotation expires.");
+            }
+
+            await tx.inquiry.update({
             where:{
-                id:inquiryId,
-                status:"IN_PROGRESS"
+                id:inquiryId
             },
             data:{
                 status:"CLOSED"
             }
         })
 
-        if(result.count==0){
-            throw new ApiError(409,"Inquiry cannot be closed");
-        }
-
         const activity=await tx.inquiryActivity.create({
             data:{
                 inquiryId:inquiryId,
                 salespersonId,
-                note:note,
+                closureReason:reason,
+                note:note || null,
                 activityType:"STATUS_CHANGED"
             }
         })

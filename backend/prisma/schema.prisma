@@ -54,6 +54,16 @@ enum InquiryActivityType {
   STATUS_CHANGED
 }
 
+// Why a salesperson closed an inquiry by hand; OTHER needs an explanatory note.
+enum InquiryClosureReason {
+  DUPLICATE
+  CUSTOMER_UNREACHABLE
+  CUSTOMER_NOT_INTERESTED
+  NOT_OUR_PRODUCT
+  INVALID_INQUIRY
+  OTHER
+}
+
 enum QuotationRevisionStatus {
   DRAFT
   SENT
@@ -198,6 +208,8 @@ model InquiryActivity {
   salespersonId Int?
   salesperson   User?               @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
   activityType  InquiryActivityType
+  // Set only on manual closures.
+  closureReason InquiryClosureReason?
   note          String?             @db.VarChar(350)
   createdAt     DateTime            @default(now())
 

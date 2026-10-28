@@ -161,12 +161,22 @@ export type StaffInquiry = {
 
 export type InquiryActivityType = "CREATED" | "CLAIMED" | "CUSTOMER_CONTACTED" | "NOTE_ADDED" | "STATUS_CHANGED";
 
+export type InquiryClosureReason =
+  | "DUPLICATE"
+  | "CUSTOMER_UNREACHABLE"
+  | "CUSTOMER_NOT_INTERESTED"
+  | "NOT_OUR_PRODUCT"
+  | "INVALID_INQUIRY"
+  | "OTHER";
+
 // GET /inquiries/:id/activities
 export type InquiryActivity = {
   id: number;
   inquiryId: number;
   salespersonId: number | null;
   activityType: InquiryActivityType;
+  // Set only when a salesperson closed the inquiry by hand.
+  closureReason: InquiryClosureReason | null;
   note: string | null;
   createdAt: string;
 };

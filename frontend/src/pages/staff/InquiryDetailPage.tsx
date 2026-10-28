@@ -5,6 +5,7 @@ import {
   addInquiryActivity,
   claimInquiry,
   closeInquiry,
+  CLOSURE_REASON_LABELS,
   getInquiry,
   getInquiryActivities,
   type ActivityKind,
@@ -16,7 +17,7 @@ import { StatusMessage } from "../../components/ui/StatusMessage";
 import { ActivityTimeline } from "../../features/staff/ActivityTimeline";
 import { InquiryStatusBadge } from "../../features/staff/InquiryStatusBadge";
 import { useApiQuery } from "../../hooks/useApiQuery";
-import type { StaffInquiry } from "../../types/api";
+import type { InquiryClosureReason, StaffInquiry } from "../../types/api";
 import { formatDateTime, formatPrice, formatUnit } from "../../utils/format";
 
 const NOTE_MAX = 350;
@@ -103,8 +104,11 @@ function ActivityForm({ inquiryId, onAdded }: { inquiryId: number; onAdded: () =
 function CloseInquiryForm({ inquiryId, onClosed }: { inquiryId: number; onClosed: () => void }) {
   const { request } = useEmployee();
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState<InquiryClosureReason | "">("");
+  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reasonError, setReasonError] = useState<string | null>(null);
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!open) {
@@ -117,21 +121,32 @@ function CloseInquiryForm({ inquiryId, onClosed }: { inquiryId: number; onClosed
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const text = reason.trim();
+    const text = note.trim();
+    const nextReasonError = reason ? null : "Choose why you're closing this enquiry.";
+    const nextNoteError = reason === "OTHER" && !text ? "Explain the reason, so the history shows why it was closed." : null;
 
-    if (!text) {
-      setError("Give a reason so the history explains why it was closed.");
+    setReasonError(nextReasonError);
+    setNoteError(nextNoteError);
+    setError(null);
+
+    if (!reason || nextNoteError) {
       return;
     }
 
     setSaving(true);
-    setError(null);
 
     try {
-      await closeInquiry(request, inquiryId, text);
+      await closeInquiry(request, inquiryId, reason, text);
       onClosed();
     } catch (caught) {
-      setError(errorText(caught));
+      const fieldErrors = caught instanceof ApiError ? caught.fieldErrors : [];
+      const reasonField = fieldErrors.find((field) => field.field.endsWith("reason"));
+      const noteField = fieldErrors.find((field) => field.field.endsWith("note"));
+
+      setReasonError(reasonField?.message ?? null);
+      setNoteError(noteField?.message ?? null);
+      // A 409 (for example, a quotation awaiting the customer) explains itself here.
+      if (!reasonField && !noteField) setError(errorText(caught));
     } finally {
       setSaving(false);
     }
@@ -140,23 +155,66 @@ function CloseInquiryForm({ inquiryId, onClosed }: { inquiryId: number; onClosed
   return (
     <form className="panel panel--warning" onSubmit={submit} noValidate>
       <h2 className="panel__title">Close this enquiry</h2>
-      <p className="muted">Close it when no quotation is needed, for example a duplicate enquiry or a customer who stopped replying.</p>
-      <label htmlFor="close-reason" className="field__label">
-        Reason
-      </label>
-      <textarea
-        id="close-reason"
-        className="input textarea textarea--short"
-        maxLength={NOTE_MAX}
-        value={reason}
-        disabled={saving}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? "close-error" : undefined}
-        onChange={(event) => {
-          setReason(event.target.value);
-          setError(null);
-        }}
-      />
+      <p className="muted">
+        Close it when no quotation is needed, for example a duplicate enquiry or a customer who stopped replying. While a sent quotation is
+        waiting for the customer, wait for their response or for it to expire.
+      </p>
+      <div className="field">
+        <label htmlFor="close-reason" className="field__label">
+          Reason
+        </label>
+        <select
+          id="close-reason"
+          className="input"
+          value={reason}
+          disabled={saving}
+          aria-invalid={reasonError ? true : undefined}
+          aria-describedby={reasonError ? "close-reason-error" : undefined}
+          onChange={(event) => {
+            setReason(event.target.value as InquiryClosureReason | "");
+            setReasonError(null);
+            setNoteError(null);
+          }}
+        >
+          <option value="">Choose a reason</option>
+          {(Object.keys(CLOSURE_REASON_LABELS) as InquiryClosureReason[]).map((value) => (
+            <option key={value} value={value}>
+              {CLOSURE_REASON_LABELS[value]}
+            </option>
+          ))}
+        </select>
+        {reasonError && (
+          <p id="close-reason-error" className="field__error">
+            {reasonError}
+          </p>
+        )}
+      </div>
+      <div className="field">
+        <label htmlFor="close-note" className="field__label">
+          Note {reason !== "OTHER" && <span className="muted">(optional)</span>}
+        </label>
+        <p id="close-note-hint" className="field__hint">
+          {reason === "OTHER" ? "Required when the reason is Other." : "Anything the history should record."}
+        </p>
+        <textarea
+          id="close-note"
+          className="input textarea textarea--short"
+          maxLength={NOTE_MAX}
+          value={note}
+          disabled={saving}
+          aria-invalid={noteError ? true : undefined}
+          aria-describedby={["close-note-hint", noteError ? "close-note-error" : ""].filter(Boolean).join(" ")}
+          onChange={(event) => {
+            setNote(event.target.value);
+            setNoteError(null);
+          }}
+        />
+        {noteError && (
+          <p id="close-note-error" className="field__error">
+            {noteError}
+          </p>
+        )}
+      </div>
       {error && (
         <p id="close-error" className="field__error" role="alert">
           {error}

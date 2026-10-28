@@ -1,5 +1,5 @@
 import z from "zod";
-import { InquiryStatus } from "../generated/prisma/enums.js";
+import { InquiryClosureReason, InquiryStatus } from "../generated/prisma/enums.js";
 
 // Indian mobile number without country code; shared with customer OTP requests.
 export const customerPhoneSchema=z
@@ -107,6 +107,31 @@ export const inquiryActivitySchema=z.object({
 })
 
 export type TinquiryActivity=z.infer<typeof inquiryActivitySchema>;
+
+export const closeInquirySchema=z.object({
+    body:z.object({
+        reason:z
+        .enum(InquiryClosureReason,{error:"Choose a reason for closing the inquiry"}),
+        note:z
+        .string()
+        .trim()
+        .max(350,"Note is too long")
+        .optional()
+    }).superRefine((body,ctx)=>{
+        // OTHER says nothing on its own, so it must be explained.
+        if(body.reason==="OTHER" && !body.note){
+            ctx.addIssue({
+                code:"custom",
+                path:["note"],
+                message:"Explain why the inquiry is being closed"
+            })
+        }
+    }),
+
+    params:inquiryActivitySchema.shape.params
+})
+
+export type TcloseInquiry=z.infer<typeof closeInquirySchema>;
 
 export const getInquiryActivitySchema=z.object({
     params:inquiryActivitySchema.shape.params

@@ -19,11 +19,22 @@ import { CustomerOtpService } from "./customer.otp.services.js";
 import { createHash } from "node:crypto";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
+import { lockInquiry } from "./inquiry.services.js";
 import {
     getQuotationFileBaseName,
     quotationPdfRevisionInclude,
     renderQuotationPdf
 } from "./generate.pdf.services.js";
+
+// A closed inquiry's draft or change request can't restart the quotation. The row lock
+// makes this wait for, or block, a concurrent close of the same inquiry.
+const assertInquiryInProgress=async(tx:Prisma.TransactionClient,inquiryId:number)=>{
+    const inquiry=await lockInquiry(tx,inquiryId);
+
+    if(inquiry?.status!=="IN_PROGRESS"){
+        throw new ApiError(409,"This inquiry is closed, so its quotation can't be changed or sent");
+    }
+}
 
 // Issued document metadata; never includes the PDF bytes.
 const quotationDocumentSummarySelect = {
@@ -233,6 +244,13 @@ export const QuotationService = {
             const revisionExists=await tx.quotationRevision.findUnique({
                 where:{
                     id:params.revisionId
+                },
+                include:{
+                    quotation:{
+                        select:{
+                            inquiryId:true
+                        }
+                    }
                 }
             })
 
@@ -243,6 +261,8 @@ export const QuotationService = {
             if(revisionExists.salespersonId!==salespersonId){
                 throw new ApiError(403,"Forbidden, can't access other salesperson's resource");
             }
+
+            await assertInquiryInProgress(tx,revisionExists.quotation.inquiryId);
 
             // The customer's response link; only its hash is stored.
             const {token,tokenHash}=generateCustomerAccessToken();
@@ -736,7 +756,18 @@ export const QuotationService = {
             if (latestRevisionNumber === undefined) {
                 throw new ApiError(404,"No revisions found for this quotation");
             }
-        
+
+            const quotation=await tx.quotation.findUniqueOrThrow({
+                where:{
+                    id:quotationId
+                },
+                select:{
+                    inquiryId:true
+                }
+            });
+
+            await assertInquiryInProgress(tx,quotation.inquiryId);
+
             const latestRevision = await tx.quotationRevision.findUnique({
                 where:{
                     quotationId_revisionNumber:{

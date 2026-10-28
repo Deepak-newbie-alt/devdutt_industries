@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { catchAsync } from "../utils/catchAsync.js";
 import type { ValidatedRequest } from '../types/ValidatedRequest.js';
 import { InquiryService } from '../services/inquiry.services.js';
-import type { TclaimInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
+import type { TclaimInquiry, TcloseInquiry, TcreateInquiryInput, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 
@@ -70,7 +70,7 @@ export const addNote=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,re
     return;
 })
 
-export const closeInquiry=catchAsync<ValidatedRequest<TinquiryActivity>>(async(req,res:Response)=>{
+export const closeInquiry=catchAsync<ValidatedRequest<TcloseInquiry>>(async(req,res:Response)=>{
     const data=await InquiryService.closeInquiry(req.validated.params,req.validated.body,req.user!.id);
 
     res.status(201).json(
