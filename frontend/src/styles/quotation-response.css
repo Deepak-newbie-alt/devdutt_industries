@@ -1,0 +1,46 @@
+/* Customer quotation page reached from a salesperson's link. */
+
+.quotation-response__number {
+  font-variant-numeric: tabular-nums;
+}
+
+.quotation-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: 0 0 var(--space-5);
+}
+
+.quotation-facts dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.quotation-facts dd {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.quotation-response {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.quotation-response h2 {
+  font-size: var(--text-xl);
+}
+
+.response-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.response-form__title {
+  font-size: var(--text-lg);
+}
