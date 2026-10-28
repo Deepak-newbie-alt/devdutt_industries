@@ -20,3 +20,15 @@ export const createProductBrochureSchema=z.object({
 })
 
 export type TcreateProductBrochureInput=z.infer<typeof createProductBrochureSchema>;
+
+export const productBrochureIdParamsSchema=z.object({
+    params:z.object({
+        brochureId:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TproductBrochureIdParams=z.infer<typeof productBrochureIdParamsSchema>;

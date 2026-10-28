@@ -27,3 +27,15 @@ export const createProductVideoSchema=z.object({
 })
 
 export type TcreateProductVideoInput=z.infer<typeof createProductVideoSchema>;
+
+export const productVideoIdParamsSchema=z.object({
+    params:z.object({
+        videoId:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TproductVideoIdParams=z.infer<typeof productVideoIdParamsSchema>;

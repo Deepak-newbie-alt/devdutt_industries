@@ -10,6 +10,7 @@ import userRoutes from "./routes/users.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import companySettingRoutes from "./routes/company.settings.routes.js";
 import customerOtpRoutes from "./routes/customer.otp.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
 
 //jobs
 import {startQuotationExpiryJob} from "./jobs/expireQuotationRevisions.js"
@@ -41,6 +42,7 @@ app.use("/api/v1/users",userRoutes);
 app.use("/api/v1/orders",orderRoutes);
 app.use("/api/v1/company-settings",companySettingRoutes);
 app.use("/api/v1/customer-otp",customerOtpRoutes);
+app.use("/api/v1/analytics",analyticsRoutes);
 
 app.use(errorHandler);
 

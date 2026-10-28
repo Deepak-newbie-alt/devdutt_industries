@@ -12,6 +12,7 @@ router.get("/:orderId",auth,validator(orderIdParamsSchema),viewOrdersById);
 router.post("/",auth,isSalesperson,validator(yourOrderBodySchema),createOrder);
 router.patch("/:orderId/status",auth,isSalesperson,validator(orderStatusTransitionSchema),changeOrderStatus);
 router.post("/:orderId/add-note",auth,isSalesperson,validator(orderActivityAddNoteSchema),addNote);
-router.get("/:orderId/activities",auth,isSalesperson,validator(orderIdParamsSchema),viewActivities);
+// Admins may read any order's history; a salesperson only their own (checked in the service).
+router.get("/:orderId/activities",auth,validator(orderIdParamsSchema),viewActivities);
 
 export default router;

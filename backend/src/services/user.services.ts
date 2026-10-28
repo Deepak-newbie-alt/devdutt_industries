@@ -36,6 +36,47 @@ function splitName(name: string) {
     };
 }
 
+type ClerkApiErrorLike = {
+    status: number;
+    errors: { code?: string; message?: string; longMessage?: string }[];
+};
+
+// Clerk API failures carry an HTTP status and a list of errors
+// (e.g. a breached password or an email already used in Clerk).
+function isClerkApiError(error: unknown): error is ClerkApiErrorLike {
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        typeof (error as ClerkApiErrorLike).status === "number" &&
+        Array.isArray((error as ClerkApiErrorLike).errors)
+    );
+}
+
+// Turns a failure while creating a salesperson into an error the
+// caller can act on, instead of reporting a false success.
+function toCreateUserError(error: unknown) {
+    if (error instanceof ApiError) {
+        return error;
+    }
+
+    if (isClerkApiError(error) && error.status >= 400 && error.status < 500) {
+        const first = error.errors[0];
+
+        if (first?.code === "form_identifier_exists") {
+            return new ApiError(409, "A user with this email already exists in Clerk.");
+        }
+
+        return new ApiError(
+            400,
+            first?.longMessage ?? first?.message ?? "Clerk rejected the user details."
+        );
+    }
+
+    // Prisma errors (e.g. P2002 for a duplicate email or phone) and anything
+    // unexpected are handled by the error middleware.
+    return error;
+}
+
 
 // --------------------------------------------------
 // User Service
@@ -127,6 +168,8 @@ export const UserService = {
                     );
                 }
             }
+
+            throw toCreateUserError(error);
         }
     },
 

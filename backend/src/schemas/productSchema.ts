@@ -136,3 +136,38 @@ export const updateProductByIdSchema=z.object({
 })
 
 export type TupdateProductById=z.infer<typeof updateProductByIdSchema>;
+
+// Admin catalog list: every status, optionally filtered by one.
+export const getAdminProductsQuerySchema=z.object({
+    query:z.object({
+        page:z
+        .coerce
+        .number()
+        .int("Page must be integer")
+        .positive("Page must be positive")
+        .default(1),
+        limit:z
+        .coerce
+        .number()
+        .int("Limit must be an integer")
+        .positive("Limit must be positive")
+        .max(100,"Limit is too high")
+        .default(10),
+        categoryId:z
+        .coerce
+        .number()
+        .int("Category Id must be an integer")
+        .positive('Category Id must be positive')
+        .optional(),
+        search:z
+        .string()
+        .trim()
+        .max(200,"Searched name is too long")
+        .optional(),
+        status:z
+        .enum(["ACTIVE","INACTIVE","ARCHIVED"])
+        .optional()
+    })
+})
+
+export type TgetAdminProductsQuery=z.infer<typeof getAdminProductsQuerySchema>;

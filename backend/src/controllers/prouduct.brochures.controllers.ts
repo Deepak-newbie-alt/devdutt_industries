@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { TcreateProductBrochureInput } from "../schemas/productBrochureSchema.js";
+import type { TcreateProductBrochureInput, TproductBrochureIdParams } from "../schemas/productBrochureSchema.js";
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { productBrochureService } from "../services/product.brochures.services.js";
@@ -11,6 +11,15 @@ export const createProductBrochure=catchAsync<ValidatedRequest<TcreateProductBro
 
     res.status(201).json(
         new ApiResponse(201,"Product brochure created successfully",data)
+    )
+    return;
+})
+
+export const deleteProductBrochure=catchAsync<ValidatedRequest<TproductBrochureIdParams>>(async(req,res:Response)=>{
+    await productBrochureService.deleteProductBrochure(req.validated.params);
+
+    res.status(200).json(
+        new ApiResponse(200,"Product brochure deleted successfully",{})
     )
     return;
 })

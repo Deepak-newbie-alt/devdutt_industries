@@ -5,7 +5,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { productService } from "../services/product.services.js";
 //types
-import type { TcreateProductBody,TgetProductQuery,TgetProductByIdParams, TupdateProductById } from "../schemas/productSchema.js";
+import type { TcreateProductBody,TgetProductQuery,TgetProductByIdParams, TupdateProductById, TgetAdminProductsQuery } from "../schemas/productSchema.js";
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 
 
@@ -63,6 +63,30 @@ export const deleteProductById=catchAsync<ValidatedRequest<TgetProductByIdParams
 
     res.status(200).json(
         new ApiResponse(200,'Product deleted successfully',{})
+    )
+    return;
+})
+
+export const getProductsForAdmin=catchAsync<ValidatedRequest<TgetAdminProductsQuery>>(async(req,res:Response)=>{
+
+    const data=await productService.findProductsForAdmin(req.validated.query);
+
+    res.status(200).json(
+        new ApiResponse(200,"Product fetched successfully",data)
+    )
+    return;
+})
+
+export const getProductByIdForAdmin=catchAsync<ValidatedRequest<TgetProductByIdParams>>(async(req,res:Response)=>{
+
+    const product=await productService.findProductByIdForAdmin(req.validated.params);
+
+    if(!product){
+        throw new ApiError(404,"Product not found");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200,"Product by id fetched successfully",product)
     )
     return;
 })

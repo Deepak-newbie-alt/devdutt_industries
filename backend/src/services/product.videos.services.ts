@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.js";
-import type { TcreateProductVideoInput } from "../schemas/productVideosSchema.js";
+import type { TcreateProductVideoInput, TproductVideoIdParams } from "../schemas/productVideosSchema.js";
 
 
 export const productVideoService={
@@ -14,5 +14,14 @@ export const productVideoService={
         })
 
         return productVideo;
+    },
+
+    // Removes one record; a missing id is reported as 404 by the error middleware (P2025).
+    deleteProductVideo:async(params:TproductVideoIdParams["params"])=>{
+        await prisma.productVideo.delete({
+            where:{
+                id:params.videoId
+            }
+        });
     }
 }

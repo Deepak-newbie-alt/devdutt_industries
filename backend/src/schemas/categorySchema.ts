@@ -95,3 +95,32 @@ export const updateCategorySchema=z.object({
 })
 
 export type TupdateCategory=z.infer<typeof updateCategorySchema>;
+
+// Admin category list: every status, optionally filtered by one.
+export const getAdminCategoriesQuerySchema=z.object({
+    query:z.object({
+        page:z
+        .coerce
+        .number()
+        .int("Page number should be an integer")
+        .positive("Page number should be positive")
+        .default(1),
+        limit:z
+        .coerce
+        .number()
+        .max(100,"Limit is too high")
+        .int("Limit should be an integer")
+        .positive("Limit should be positive")
+        .default(10),
+        search:z
+        .string()
+        .trim()
+        .max(200,"Name is too long")
+        .optional(),
+        status:z
+        .enum(["ACTIVE","INACTIVE","ARCHIVED"])
+        .optional()
+    })
+})
+
+export type TgetAdminCategoriesQuery=z.infer<typeof getAdminCategoriesQuerySchema>;

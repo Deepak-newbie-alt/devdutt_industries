@@ -146,6 +146,11 @@ export const changeUserRole =
     catchAsync<ValidatedRequest<TchangeUserRole>>(
         async (req, res: Response) => {
 
+            // An admin can't demote themselves, so the admin area can't be locked out.
+            if (req.user!.id === req.validated.params.id) {
+                throw new ApiError(403, "You can't change your own role.");
+            }
+
             const data = await UserService.changeRole(
                 req.validated.params,
                 req.validated.body
@@ -169,7 +174,11 @@ export const changeUserRole =
 export const updateUserStatus =
     catchAsync<ValidatedRequest<TupdateUserStatus>>(
         async (req, res: Response) => {
-            
+
+            // An admin can't deactivate themselves, so the admin area can't be locked out.
+            if (req.user!.id === req.validated.params.id) {
+                throw new ApiError(403, "You can't change your own status.");
+            }
 
             const data = await UserService.setStatus(
                 req.validated.params,

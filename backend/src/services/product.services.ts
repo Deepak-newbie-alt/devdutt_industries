@@ -2,7 +2,43 @@ import prisma from "../lib/prisma.js";
 import { Prisma } from "../generated/prisma/client.js";
 
 //types
-import type { TgetProductQuery,TgetProductByIdParams, TcreateProductBody, TupdateProductById } from "../schemas/productSchema.js";
+import type { TgetProductQuery,TgetProductByIdParams, TcreateProductBody, TupdateProductById, TgetAdminProductsQuery } from "../schemas/productSchema.js";
+
+// Admin views: the product with its category and every media item (ids included, for removal).
+const adminProductInclude={
+    category:{
+        select:{
+            id:true,
+            name:true,
+            slug:true,
+            status:true
+        }
+    },
+    images:{
+        select:{
+            id:true,
+            imageUrl:true,
+            displayOrder:true
+        },
+        orderBy:[{displayOrder:"asc"},{id:"asc"}]
+    },
+    videos:{
+        select:{
+            id:true,
+            youtubeUrl:true,
+            title:true,
+            displayOrder:true
+        },
+        orderBy:[{displayOrder:"asc"},{id:"asc"}]
+    },
+    brochure:{
+        select:{
+            id:true,
+            fileName:true,
+            fileUrl:true
+        }
+    }
+} satisfies Prisma.ProductInclude;
 
 
 export const productService={
@@ -196,6 +232,62 @@ export const productService={
         const product=await prisma.product.update(prismaQuery);
 
         return product;
+    },
+
+    // Admin: products in every status, so inactive ones can be found and edited again.
+    findProductsForAdmin:async(query:TgetAdminProductsQuery["query"])=>{
+        const {page,limit,categoryId,search,status}=query;
+
+        const where:Prisma.ProductWhereInput={};
+
+        if(status){
+            where.status=status;
+        }
+
+        if(categoryId){
+            where.categoryId=categoryId;
+        }
+
+        if(search){
+            where.name={
+                contains:search,
+                mode:"insensitive"
+            }
+        }
+
+        const [products,totalProducts]=await Promise.all([
+            prisma.product.findMany({
+                take:limit,
+                skip:(page-1)*limit,
+                where,
+                orderBy:{
+                    createdAt:"desc"
+                },
+                include:adminProductInclude
+            }),
+            prisma.product.count({where})
+        ]);
+
+        return {
+            products,
+            meta:{
+                page,
+                limit,
+                totalPages:Math.ceil(totalProducts/limit),
+                totalProducts
+            }
+        };
+    },
+
+    findProductByIdForAdmin:async(params:TgetProductByIdParams["params"])=>{
+        const {productId}=params;
+
+        return prisma.product.findUnique({
+            where:{
+                id:productId
+            },
+            include:adminProductInclude
+        });
     },
 
     deleteProductById:async(params:TgetProductByIdParams["params"])=>{

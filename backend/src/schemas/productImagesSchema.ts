@@ -24,3 +24,15 @@ export const createProductImageSchema = z.object({
 });
 
 export type TcreateProductImageInput = z.infer<typeof createProductImageSchema>;
+
+export const productImageIdParamsSchema=z.object({
+    params:z.object({
+        imageId:z
+        .coerce
+        .number()
+        .int("Id must be an integer")
+        .positive("Id must be positive")
+    })
+})
+
+export type TproductImageIdParams=z.infer<typeof productImageIdParamsSchema>;

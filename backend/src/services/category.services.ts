@@ -1,6 +1,6 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
-import type { TcreateCategoryInput, TgetCategoryByIdParams, TgetCategoryQuery, TupdateCategory } from "../schemas/categorySchema.js";
+import type { TcreateCategoryInput, TgetAdminCategoriesQuery, TgetCategoryByIdParams, TgetCategoryQuery, TupdateCategory } from "../schemas/categorySchema.js";
 
 export const categoryService={
     createCategory:async(body:TcreateCategoryInput["body"])=>{
@@ -134,5 +134,67 @@ export const categoryService={
         const category=await prisma.category.update(prismaQuery);
 
         return category;
+    },
+
+    // Admin: categories in every status, with how many products each holds.
+    getCategoriesForAdmin:async(query:TgetAdminCategoriesQuery["query"])=>{
+        const {page,limit,search,status}=query;
+
+        const where:Prisma.CategoryWhereInput={};
+
+        if(status){
+            where.status=status;
+        }
+
+        if(search){
+            where.name={
+                contains:search,
+                mode:"insensitive"
+            }
+        }
+
+        const [category,totalCategory]=await Promise.all([
+            prisma.category.findMany({
+                take:limit,
+                skip:(page-1)*limit,
+                where,
+                orderBy:[{displayOrder:"asc"},{id:"asc"}],
+                include:{
+                    _count:{
+                        select:{
+                            products:true
+                        }
+                    }
+                }
+            }),
+            prisma.category.count({where})
+        ]);
+
+        return {
+            category,
+            meta:{
+                page,
+                limit,
+                totalPages:Math.ceil(totalCategory/limit),
+                totalCategory
+            }
+        };
+    },
+
+    getCategoryByIdForAdmin:async(params:TgetCategoryByIdParams["params"])=>{
+        const {categoryId}=params;
+
+        return prisma.category.findUnique({
+            where:{
+                id:categoryId
+            },
+            include:{
+                _count:{
+                    select:{
+                        products:true
+                    }
+                }
+            }
+        });
     }
 }

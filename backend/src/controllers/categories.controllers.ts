@@ -4,7 +4,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 
 //types
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
-import type { TcreateCategoryInput, TgetCategoryByIdParams, TgetCategoryQuery, TupdateCategory } from "../schemas/categorySchema.js";
+import type { TcreateCategoryInput, TgetAdminCategoriesQuery, TgetCategoryByIdParams, TgetCategoryQuery, TupdateCategory } from "../schemas/categorySchema.js";
 import { categoryService } from "../services/category.services.js";
 import ApiError from "../utils/ApiError.js";
 
@@ -50,5 +50,29 @@ export const updateCategory=catchAsync<ValidatedRequest<TupdateCategory>>(async(
         new ApiResponse(200,"Category updated successfully",category)
     )
 
+    return;
+})
+
+export const getCategoriesForAdmin=catchAsync<ValidatedRequest<TgetAdminCategoriesQuery>>(async(req,res:Response)=>{
+
+    const data=await categoryService.getCategoriesForAdmin(req.validated.query);
+
+    res.status(200).json(
+        new ApiResponse(200,"Category fetched successfully",data)
+    );
+    return;
+})
+
+export const getCategoryByIdForAdmin=catchAsync<ValidatedRequest<TgetCategoryByIdParams>>(async(req,res:Response)=>{
+
+    const data=await categoryService.getCategoryByIdForAdmin(req.validated.params);
+
+    if(!data){
+        throw new ApiError(404,"Category not found");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200,"Category fetched successfully",data)
+    );
     return;
 })
