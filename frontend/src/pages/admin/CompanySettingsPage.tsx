@@ -65,8 +65,8 @@ function validate(values: Values): Errors {
     if (!values[field].trim()) errors[field] = "This is required.";
   }
   if (values.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) errors.email = "Enter a valid email address.";
-  if (values.website.trim() && !isWebUrl(values.website)) errors.website = "Enter a full web address starting with https://";
-  if (values.logoUrl.trim() && !isWebUrl(values.logoUrl)) errors.logoUrl = "Enter a full web address starting with https://";
+  if (values.website.trim() && !isWebUrl(values.website)) errors.website = "Enter a full web address starting with http:// or https://";
+  if (values.logoUrl.trim() && !isWebUrl(values.logoUrl)) errors.logoUrl = "Enter a full web address starting with http:// or https://";
   if (values.gstin.trim() && !GSTIN_PATTERN.test(values.gstin.trim().toUpperCase())) errors.gstin = "Enter a valid 15-character GSTIN.";
   return errors;
 }

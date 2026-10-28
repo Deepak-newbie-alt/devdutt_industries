@@ -12,7 +12,7 @@ export const createProductImageSchema = z.object({
     .string()
     .trim()
     .min(1,"Product image_url is required")
-    .url("Image URL must be a valid URL"),
+    .url({ protocol: /^https?$/, message: "Image URL must be a valid http:// or https:// URL" }),
 
     displayOrder: z
     .coerce

@@ -58,7 +58,7 @@ export const createCompanySettingsSchema = z.object({
             .default(null),
 
         website: z
-            .url()
+            .url({ protocol: /^https?$/, message: "Website URL must start with http:// or https://" })
             .max(255, "Website URL is too long")
             .nullable()
             .default(null),
@@ -76,7 +76,7 @@ export const createCompanySettingsSchema = z.object({
             .default(null),
 
         logoUrl: z
-            .url()
+            .url({ protocol: /^https?$/, message: "Logo URL must start with http:// or https://" })
             .max(500, "Logo URL is too long")
             .nullable()
             .default(null),

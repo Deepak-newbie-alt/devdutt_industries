@@ -11,7 +11,7 @@ export const createProductVideoSchema=z.object({
         .string()
         .trim()
         .min(1,"Url is required")
-        .url("Please provide a valid url"),
+        .url({ protocol: /^https?$/, message: "Please provide a valid http:// or https:// url" }),
         title:z
         .string()
         .trim()

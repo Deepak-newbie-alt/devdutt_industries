@@ -16,7 +16,7 @@ import { ConfirmBar } from "./ConfirmBar";
 import { isWebUrl } from "./productFormState";
 
 const LIMITS = { videoTitle: 200, fileName: 255 } as const;
-const URL_MESSAGE = "Enter a full web address starting with https://";
+const URL_MESSAGE = "Enter a full web address starting with http:// or https://";
 
 type Removal = { kind: "image" | "video" | "brochure"; id: number; label: string };
 

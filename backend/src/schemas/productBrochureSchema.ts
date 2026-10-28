@@ -11,7 +11,7 @@ export const createProductBrochureSchema=z.object({
         .string()
         .trim()
         .min(1,"You must provide file url")
-        .url("Please provide a valid url"),
+        .url({ protocol: /^https?$/, message: "Please provide a valid http:// or https:// url" }),
         fileName:z
         .string()
         .min(1,"Please provide a file name")
