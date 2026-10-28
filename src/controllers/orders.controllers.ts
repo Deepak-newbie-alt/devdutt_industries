@@ -16,7 +16,11 @@ export const createOrder=catchAsync<ValidatedRequest<TyourOrderBody>>(async(req,
 })
 
 export const viewOrders=catchAsync<ValidatedRequest<TviewOrdersQuery>>(async(req,res:Response)=>{
-    const data=await OrderService.viewOrders(req.validated.query);
+    const actor:Actor={
+        id:req.user!.id,
+        role:req.user!.role
+    }
+    const data=await OrderService.viewOrders(req.validated.query,actor);
 
     res.status(200).json(
         new ApiResponse(200,"Orders fetched successfully",data)

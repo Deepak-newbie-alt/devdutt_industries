@@ -655,6 +655,13 @@ export const QuotationService = {
             document: {
                 select: quotationDocumentSummarySelect,
             },
+            order: {
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    status: true,
+                },
+            },
             },
             omit: {
                 customerAccessTokenHash: true,

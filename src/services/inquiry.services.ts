@@ -76,6 +76,12 @@ export const InquiryService={
             },
             include: {
             product: true,
+            quotation: {
+                select: {
+                id: true,
+                quotationNumber: true,
+                },
+            },
             },
         };
 
@@ -89,7 +95,13 @@ export const InquiryService={
                 id:inquiryId
             },
             include:{
-                product:true
+                product:true,
+                quotation:{
+                    select:{
+                        id:true,
+                        quotationNumber:true
+                    }
+                }
             }
         })
 

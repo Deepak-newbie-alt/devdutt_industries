@@ -97,7 +97,7 @@ export const OrderService = {
             });
         });
     },
-    viewOrders:async(query:TviewOrdersQuery["query"])=>{
+    viewOrders:async(query:TviewOrdersQuery["query"],actor:Actor)=>{
         const {page,limit,status,search}=query;
 
         const where:Prisma.OrderWhereInput={};
@@ -106,6 +106,12 @@ export const OrderService = {
 
         if(status){
             where.status=status;
+        }
+
+        if(actor.role!=="ADMIN"){
+            where.quotationRevision={
+                salespersonId:actor.id
+            };
         }
 
         if(search){
@@ -124,7 +130,11 @@ export const OrderService = {
                 {id:"desc"}
             ],
             include:{
-                quotationRevision:true,
+                quotationRevision:{
+                    omit:{
+                        customerAccessTokenHash:true
+                    }
+                },
                 items:true
             }
         }
@@ -151,7 +161,11 @@ export const OrderService = {
                 id:orderId
             },
             include:{
-                quotationRevision:true,
+                quotationRevision:{
+                    omit:{
+                        customerAccessTokenHash:true
+                    }
+                },
                 items:true
             }
         })
