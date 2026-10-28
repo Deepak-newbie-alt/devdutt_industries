@@ -3,9 +3,10 @@ import { useState, type FormEvent } from "react";
 import { listCategories, listProducts } from "../api/catalog";
 import { LoadError } from "../components/ui/LoadError";
 import { LoadingState } from "../components/ui/LoadingState";
-import { TubeBendDrawing } from "../features/catalog/MachineDrawing";
 import { ProductCard } from "../features/catalog/ProductCard";
+import { ProductVideos } from "../features/catalog/ProductVideos";
 import { useApiQuery } from "../hooks/useApiQuery";
+import type { Product } from "../types/api";
 
 function HeroSearch() {
   const navigate = useNavigate();
@@ -31,14 +32,15 @@ function HeroSearch() {
         placeholder="Search machines, e.g. pipe bending"
         onChange={(event) => setQuery(event.target.value)}
       />
-      <button type="submit" className="button button--primary">
+      <button type="submit" className="button button--accent">
         Search
       </button>
     </form>
   );
 }
 
-function CategoryList() {
+// The category index in the hero: real categories with their machine counts.
+function CategoryIndex() {
   const categories = useApiQuery((signal) => listCategories(signal), []);
 
   if (categories.status === "loading") {
@@ -62,8 +64,7 @@ function CategoryList() {
         <li key={category.id}>
           <Link to={`/machines?category=${category.id}`} className="category-row">
             <span className="category-row__name">{category.name}</span>
-            {category.description && <span className="category-row__description">{category.description}</span>}
-            <span className="category-row__count arrow-link">
+            <span className="category-row__count">
               {category.products.length === 1 ? "1 machine" : `${category.products.length} machines`}
             </span>
           </Link>
@@ -73,30 +74,34 @@ function CategoryList() {
   );
 }
 
-function RecentMachines() {
-  // The backend lists newest first; there is no "featured" flag yet.
-  const products = useApiQuery((signal) => listProducts({ limit: 4 }, signal), []);
+// Product videos from the catalog, each with the machine it belongs to; nothing shows when there are none.
+function MachinesAtWork({ products }: { products: Product[] }) {
+  const withVideos = products.filter((product) => product.videos.length > 0).slice(0, 2);
 
-  if (products.status === "loading") {
-    return <LoadingState label="Loading machines" />;
-  }
-
-  if (products.status === "error") {
-    return <LoadError title="Machines couldn't be loaded" error={products.error} onRetry={products.reload} />;
-  }
-
-  if (products.data.products.length === 0) {
-    return <p className="muted">Machines will appear here soon.</p>;
+  if (withVideos.length === 0) {
+    return null;
   }
 
   return (
-    <ul className="product-grid">
-      {products.data.products.map((product) => (
-        <li key={product.id}>
-          <ProductCard product={product} />
-        </li>
-      ))}
-    </ul>
+    <section className="home-videos" aria-labelledby="videos-heading">
+      <div className="container page-section home-videos__inner">
+        <div className="home-videos__intro">
+          <p className="eyebrow">On video</p>
+          <h2 id="videos-heading">Our machines at work</h2>
+          <p>Product videos, each linked to its machine's prices and specifications.</p>
+        </div>
+        <div className="home-videos__grid">
+          {withVideos.map((product) => (
+            <div key={product.id} className="home-videos__item">
+              <ProductVideos videos={product.videos.slice(0, 1)} />
+              <Link to={`/machines/${product.id}`} className="arrow-link home-videos__link">
+                {product.name}
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -121,12 +126,17 @@ const QUOTE_STEPS = [
 ] as const;
 
 export function HomePage() {
+  // Newest first (there is no "featured" flag); the first four are shown, and any videos among
+  // the newest machines are shown further down.
+  const products = useApiQuery((signal) => listProducts({ limit: 24 }, signal), []);
+
   return (
     <>
       <title>Devdutt Industries | Pipe and tube machinery</title>
       <section className="hero" aria-labelledby="hero-heading">
         <div className="container hero__inner">
           <div className="hero__copy">
+            <p className="eyebrow hero__tagline">Your imagination our creation</p>
             <h1 id="hero-heading" className="hero__title">
               Machines that shape tube and pipe
             </h1>
@@ -144,54 +154,73 @@ export function HomePage() {
               </Link>
             </p>
           </div>
-          <div className="hero__drawing">
-            <TubeBendDrawing />
-          </div>
+
+          <section className="hero__panel" aria-labelledby="categories-heading">
+            <h2 id="categories-heading" className="hero__panel-title">
+              Machine categories
+            </h2>
+            <CategoryIndex />
+            <Link to="/machines" className="arrow-link hero__panel-link">
+              View all machines
+            </Link>
+          </section>
         </div>
       </section>
 
-      <section className="container page-section home-categories" aria-labelledby="categories-heading">
-        <div className="home-categories__intro">
-          <h2 id="categories-heading">Machine categories</h2>
-          <p className="muted">Every machine is listed with its price and specifications.</p>
+      <section className="container page-section" aria-labelledby="recent-heading">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Catalog</p>
+            <h2 id="recent-heading">Recently added machines</h2>
+          </div>
           <Link to="/machines" className="arrow-link">
             View all machines
           </Link>
         </div>
-        <CategoryList />
+        {products.status === "loading" && <LoadingState label="Loading machines" />}
+        {products.status === "error" && (
+          <LoadError title="Machines couldn't be loaded" error={products.error} onRetry={products.reload} />
+        )}
+        {products.status === "success" &&
+          (products.data.products.length === 0 ? (
+            <div className="empty-state">
+              <p className="empty-state__title">Machines will appear here soon</p>
+            </div>
+          ) : (
+            <ul className="product-grid">
+              {products.data.products.slice(0, 4).map((product) => (
+                <li key={product.id}>
+                  <ProductCard product={product} />
+                </li>
+              ))}
+            </ul>
+          ))}
       </section>
 
-      <section className="home-recent" aria-labelledby="recent-heading">
-        <div className="container page-section">
-          <div className="section-heading">
-            <h2 id="recent-heading">Recently added machines</h2>
-            <Link to="/machines" className="arrow-link">
-              View all machines
+      {products.status === "success" && <MachinesAtWork products={products.data.products} />}
+
+      <section className="quote-steps-band" aria-labelledby="steps-heading">
+        <div className="container page-section quote-steps">
+          <div className="quote-steps__intro">
+            <p className="eyebrow">How it works</p>
+            <h2 id="steps-heading">How a quotation works</h2>
+            <p>
+              Pick the closest machine and describe your pipe sizes and production needs. Our sales team will reply
+              with a quotation.
+            </p>
+            <Link to="/machines" className="button button--accent button--large">
+              Choose a machine
             </Link>
           </div>
-          <RecentMachines />
+          <ol className="quote-steps__list">
+            {QUOTE_STEPS.map((step) => (
+              <li key={step.title} className="quote-steps__item">
+                <h3 className="quote-steps__title">{step.title}</h3>
+                <p>{step.text}</p>
+              </li>
+            ))}
+          </ol>
         </div>
-      </section>
-
-      <section className="container page-section quote-steps" aria-labelledby="steps-heading">
-        <div className="quote-steps__intro">
-          <h2 id="steps-heading">How a quotation works</h2>
-          <p>
-            Pick the closest machine and describe your pipe sizes and production needs. Our sales team will reply
-            with a quotation.
-          </p>
-          <Link to="/machines" className="button button--accent button--large">
-            Choose a machine
-          </Link>
-        </div>
-        <ol className="quote-steps__list">
-          {QUOTE_STEPS.map((step) => (
-            <li key={step.title} className="quote-steps__item">
-              <h3 className="quote-steps__title">{step.title}</h3>
-              <p>{step.text}</p>
-            </li>
-          ))}
-        </ol>
       </section>
     </>
   );

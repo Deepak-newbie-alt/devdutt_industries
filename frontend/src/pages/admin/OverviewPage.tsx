@@ -23,18 +23,67 @@ const REVISION_LABELS: Record<QuotationRevisionStatus, string> = {
   SUPERSEDED: "Superseded",
 };
 
-type Tile = { label: string; count: number; to?: string };
+// Status colour family, the same as the status badges.
+type Tone = "waiting" | "active" | "moving" | "done" | "ended" | "neutral";
+type Tile = { label: string; count: number; to?: string; tone?: Tone };
+
+const INQUIRY_TONES: Record<InquiryStatus, Tone> = { OPEN: "waiting", IN_PROGRESS: "active", CLOSED: "neutral" };
+
+const REVISION_TONES: Record<QuotationRevisionStatus, Tone> = {
+  DRAFT: "neutral",
+  SENT: "active",
+  REVISION_REQUESTED: "waiting",
+  ACCEPTED: "done",
+  REJECTED: "ended",
+  EXPIRED: "neutral",
+  SUPERSEDED: "neutral",
+};
+
+const ORDER_TONES: Record<OrderStatus, Tone> = {
+  CONFIRMED: "active",
+  IN_PRODUCTION: "waiting",
+  READY: "waiting",
+  DISPATCHED: "moving",
+  DELIVERED: "done",
+  CANCELLED: "ended",
+};
+
+// How the group's total splits across its statuses, drawn from the same counts as the tiles.
+function ShareBar({ tiles }: { tiles: Tile[] }) {
+  const total = tiles.reduce((sum, tile) => sum + tile.count, 0);
+
+  if (total === 0) {
+    return null;
+  }
+
+  return (
+    <div className="share" aria-hidden="true">
+      {tiles
+        .filter((tile) => tile.count > 0)
+        .map((tile) => (
+          <span key={tile.label} className={`share__segment share__segment--${tile.tone ?? "neutral"}`} style={{ flexGrow: tile.count }} />
+        ))}
+    </div>
+  );
+}
 
 function TileGroup({ id, title, note, tiles }: { id: string; title: string; note?: string; tiles: Tile[] }) {
+  const toned = tiles.every((tile) => tile.tone);
+  const total = tiles.reduce((sum, tile) => sum + tile.count, 0);
+
   return (
-    <section className="panel" aria-labelledby={id}>
-      <h2 id={id} className="panel__title">
-        {title}
-      </h2>
+    <section className="panel overview__group" aria-labelledby={id}>
+      <div className="overview__head">
+        <h2 id={id} className="panel__title">
+          {title}
+        </h2>
+        {toned && <span className="overview__total">{total.toLocaleString("en-IN")} in total</span>}
+      </div>
       {note && <p className="muted">{note}</p>}
+      {toned && <ShareBar tiles={tiles} />}
       <ul className="stat-grid">
         {tiles.map((tile) => (
-          <li key={tile.label} className="stat">
+          <li key={tile.label} className={tile.tone ? `stat stat--${tile.tone}` : "stat"}>
             {tile.to ? (
               <Link to={tile.to} className="stat__link">
                 <span className={tile.count === 0 ? "stat__count stat__count--zero" : "stat__count"}>{tile.count.toLocaleString("en-IN")}</span>
@@ -78,6 +127,7 @@ export function OverviewPage() {
               label: INQUIRY_LABELS[status],
               count: summary.data.inquiries[status],
               to: `/app/inquiries?status=${status}`,
+              tone: INQUIRY_TONES[status],
             }))}
           />
           <TileGroup
@@ -87,6 +137,7 @@ export function OverviewPage() {
             tiles={(Object.keys(REVISION_LABELS) as QuotationRevisionStatus[]).map((status) => ({
               label: REVISION_LABELS[status],
               count: summary.data.quotations.revisionsByStatus[status],
+              tone: REVISION_TONES[status],
             }))}
           />
           <TileGroup
@@ -96,6 +147,7 @@ export function OverviewPage() {
               label: ORDER_STATUS_LABELS[status],
               count: summary.data.orders[status],
               to: `/app/orders?status=${status}`,
+              tone: ORDER_TONES[status],
             }))}
           />
           <TileGroup

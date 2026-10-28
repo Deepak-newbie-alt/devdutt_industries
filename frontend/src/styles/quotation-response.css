@@ -11,9 +11,11 @@
   gap: var(--space-4) var(--space-7);
   margin: 0 0 var(--space-5);
   padding: var(--space-4) var(--space-5);
-  border-top: 3px solid var(--color-navy);
-  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-ink);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .quotation-facts dt {
@@ -23,19 +25,20 @@
 
 .quotation-facts dd {
   margin: 0;
-  color: var(--color-navy);
+  color: var(--color-ink);
   font-size: var(--text-xl);
-  font-weight: 760;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 .quotation-response {
   margin-top: var(--space-6);
   padding: var(--space-5);
-  border-top: 3px solid var(--color-accent);
-  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-brand);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: 0 0 0 1px var(--color-border);
+  box-shadow: var(--shadow);
 }
 
 @media (min-width: 48rem) {

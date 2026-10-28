@@ -6,18 +6,22 @@
   display: flex;
   gap: var(--space-2);
   max-width: 36rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .hero-search__input {
   flex: 1;
   min-width: 0;
-  min-height: 3.25rem;
+  min-height: 3rem;
   border-color: transparent;
   font-size: var(--text-lg);
 }
 
 .hero-search .button {
-  min-height: 3.25rem;
+  min-height: 3rem;
   padding-inline: var(--space-6);
 }
 
@@ -25,7 +29,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-6);
-  margin-bottom: 0;
+  margin: var(--space-5) 0 0;
 }
 
 .hero__link,
@@ -38,95 +42,100 @@
   text-underline-offset: 4px;
 }
 
-/* Categories: an index of large rows, the heading held in a column on the left. */
-.home-categories {
+/* The category index (hero panel): rows with the count on the right. */
+.category-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-list li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.category-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-2);
+  margin: 0 calc(-1 * var(--space-2));
+  border-radius: var(--radius);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.category-row:hover {
+  background: var(--color-brand-tint);
+  color: var(--color-text);
+}
+
+.category-row__name {
+  color: var(--color-ink);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.category-row:hover .category-row__name {
+  color: var(--color-brand-text);
+}
+
+.category-row__count {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Videos of the newest machines (only when some exist). */
+.home-videos {
+  background: var(--color-surface-muted);
+}
+
+/* Heading on the left, the videos stacked on the right. */
+.home-videos__inner {
   display: grid;
   gap: var(--space-6);
 }
 
 @media (min-width: 60rem) {
-  .home-categories {
+  .home-videos__inner {
     grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
     gap: var(--space-7);
     align-items: start;
   }
-
-  .home-categories__intro {
-    position: sticky;
-    top: var(--space-6);
-  }
 }
 
-.home-categories__intro h2 {
+.home-videos__intro h2 {
   font-size: var(--text-3xl);
 }
 
-.home-categories__intro p {
-  max-width: 22rem;
+.home-videos__intro p:last-child {
+  max-width: 24rem;
+  font-size: var(--text-lg);
 }
 
-.category-list {
-  margin: 0;
-  padding: 0;
-  border-top: 2px solid var(--color-navy);
-  list-style: none;
-}
-
-.category-list li {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.category-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-1) var(--space-5);
-  align-items: baseline;
-  padding: var(--space-5) var(--space-2);
-  color: var(--color-text);
-  text-decoration: none;
-  transition: background-color 160ms ease, padding 200ms var(--ease);
-}
-
-.category-row:hover {
-  padding-left: var(--space-4);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.category-row__name {
-  color: var(--color-navy);
-  font-size: clamp(1.375rem, 1.1rem + 1.1vw, 2rem);
-  font-stretch: var(--stretch-display);
-  font-weight: 760;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-}
-
-.category-row__count {
-  grid-column: 2;
-  grid-row: 1;
-  color: var(--color-accent-text);
-  white-space: nowrap;
-}
-
-.category-row__description {
-  grid-column: 1;
-  color: var(--color-text-muted);
-}
-
-/* Recently added: a band one tone step off the page. */
-.home-recent {
-  background: var(--color-surface-muted);
-}
-
-.home-recent .section-heading h2 {
-  font-size: var(--text-3xl);
-}
-
-/* How a quotation works: the call to action on the left, the steps as a numbered sequence. */
-.quote-steps {
+.home-videos__grid {
   display: grid;
   gap: var(--space-6);
+}
+
+.home-videos__link {
+  margin-top: var(--space-3);
+}
+
+/* How a quotation works: a white band, the call to action on the left, numbered steps on the right. */
+.quote-steps-band {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.quote-steps {
+  display: grid;
+  gap: var(--space-7);
 }
 
 @media (min-width: 60rem) {
@@ -149,7 +158,7 @@
 
 .quote-steps__list {
   display: grid;
-  gap: 0;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -158,37 +167,43 @@
 
 .quote-steps__item {
   position: relative;
-  padding: var(--space-5) 0 var(--space-5) var(--space-8);
-  border-top: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-5) var(--space-4) 4.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
   counter-increment: step;
+  transition: background-color 150ms ease;
 }
 
-.quote-steps__item:first-child {
-  border-top: 2px solid var(--color-navy);
+.quote-steps__item:hover {
+  background: var(--color-surface-muted);
 }
 
-/* The step number, large and quiet, in the left margin. */
+/* The step number in a red ring. */
 .quote-steps__item::before {
   content: counter(step);
   position: absolute;
   top: var(--space-4);
-  left: 0;
-  color: var(--color-accent);
-  font-size: var(--text-3xl);
-  font-stretch: 75%;
+  left: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 2px solid var(--color-brand);
+  border-radius: 50%;
+  color: var(--color-brand-text);
+  font-family: var(--font-serif);
   font-weight: 800;
-  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .quote-steps__title {
   margin-bottom: var(--space-1);
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
 }
 
 .quote-steps__item p {
-  max-width: 38rem;
   margin: 0;
+  color: var(--color-text-muted);
 }
 
 /* ---- Product cards ---- */
@@ -217,25 +232,41 @@
   object-fit: cover;
 }
 
-/* No photo yet: a tube sketch on dotted drawing paper. */
+/* No photo yet: a quiet branded panel set in type, with a red corner mark. Replaced by the photo later. */
 .image-frame--empty {
-  background-color: #f3f1ec;
-  background-image: radial-gradient(circle, rgba(19, 38, 63, 0.13) 1px, transparent 1.3px);
-  background-size: 18px 18px;
-  background-position: 9px 9px;
-  color: var(--color-navy);
+  background: linear-gradient(135deg, #f3f0eb 0%, #e9e5df 100%);
 }
 
-.image-frame--empty svg {
-  width: 78%;
-  height: auto;
-  opacity: 0.75;
+.image-frame--empty::before {
+  content: "";
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-top: 3px solid var(--color-brand);
+  border-left: 3px solid var(--color-brand);
+}
+
+.image-frame__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.image-frame__label {
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-stretch: var(--stretch-display);
+  font-weight: 750;
+  line-height: 1.2;
 }
 
 .image-frame__empty {
-  position: absolute;
-  left: var(--space-3);
-  bottom: var(--space-2);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
@@ -246,23 +277,25 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: 0 0 0 1px var(--color-border);
-  transition: box-shadow 200ms ease, transform 200ms var(--ease);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 220ms ease, transform 220ms var(--ease), border-color 220ms ease;
 }
 
 .product-card:hover {
-  box-shadow: 0 0 0 1px var(--color-border), var(--shadow-raised);
-  transform: translateY(-2px);
+  border-color: #d6d1c9;
+  box-shadow: var(--shadow-raised);
+  transform: translateY(-3px);
 }
 
 .product-card .image-frame img {
-  transition: transform 400ms var(--ease);
+  transition: transform 500ms var(--ease);
 }
 
 .product-card:hover .image-frame img {
-  transform: scale(1.03);
+  transform: scale(1.04);
 }
 
 .product-card:focus-within {
@@ -274,14 +307,13 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: var(--space-4) var(--space-4) 0;
+  padding: var(--space-4) var(--space-5) 0;
 }
 
 .product-card__category {
   margin-bottom: var(--space-1);
-  color: var(--color-accent-text);
+  color: var(--color-text-muted);
   font-size: var(--text-sm);
-  font-weight: 650;
 }
 
 .product-card__name {
@@ -291,7 +323,7 @@
 }
 
 .product-card__link {
-  color: var(--color-navy);
+  color: var(--color-ink);
   text-decoration: none;
 }
 
@@ -307,9 +339,7 @@
 }
 
 .product-card:hover .product-card__link {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  color: var(--color-brand-text);
 }
 
 .product-card__footer {
@@ -318,29 +348,28 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  margin: auto calc(-1 * var(--space-4)) 0;
-  padding: var(--space-3) var(--space-4);
+  margin: auto calc(-1 * var(--space-5)) 0;
+  padding: var(--space-3) var(--space-5);
   border-top: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
 }
 
 .product-card__price {
   margin: 0;
-  color: var(--color-text);
+  color: var(--color-ink);
   font-size: var(--text-xl);
-  font-stretch: var(--stretch-display);
-  font-weight: 780;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 .product-card__unit {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
-  font-stretch: 100%;
   font-weight: 400;
 }
 
 .product-card__more {
-  color: var(--color-accent-text);
+  color: var(--color-brand-text);
   font-size: var(--text-sm);
 }
 
@@ -358,20 +387,26 @@
 
 @media (min-width: 60rem) {
   .catalog {
-    grid-template-columns: 16rem 1fr;
+    grid-template-columns: 17rem 1fr;
     gap: var(--space-7);
   }
 
   .filters {
     position: sticky;
-    top: var(--space-5);
+    top: calc(var(--header-height) + var(--space-5));
   }
 }
 
+/* Filters: one white card with the search, categories and price range. */
 .filters {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .filters__group {
@@ -386,14 +421,13 @@
 }
 
 .filters__heading {
-  margin: 0 0 var(--space-1);
-  padding-bottom: var(--space-2);
-  border-bottom: 2px solid var(--color-navy);
-  color: var(--color-navy);
-  font-size: var(--text-base);
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
   font-stretch: 100%;
-  font-weight: 700;
-  letter-spacing: 0;
+  font-weight: 750;
+  letter-spacing: 0.02em;
 }
 
 .filters__categories {
@@ -408,7 +442,7 @@
 @media (min-width: 60rem) {
   .filters__categories {
     flex-direction: column;
-    gap: 0;
+    gap: 2px;
   }
 }
 
@@ -417,35 +451,35 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius);
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border-radius: var(--radius);
   color: var(--color-text);
+  font-size: 0.9375rem;
   text-decoration: none;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 @media (min-width: 60rem) {
   .filters__category {
     border-color: transparent;
-    background: transparent;
   }
 }
 
 .filters__category:hover {
   background: var(--color-surface-muted);
-  color: var(--color-navy);
+  color: var(--color-ink);
 }
 
 .filters__category[aria-current="true"],
 .filters__category[aria-current="true"]:hover {
-  background: var(--color-navy);
+  border-color: var(--color-ink);
+  background: var(--color-ink);
   color: var(--color-text-inverse);
   font-weight: 700;
 }
 
 .filters__count {
-  opacity: 0.75;
+  opacity: 0.7;
   font-variant-numeric: tabular-nums;
 }
 
@@ -461,14 +495,15 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
 }
 
 .catalog__count {
   margin: 0;
-  color: var(--color-navy);
+  color: var(--color-ink);
   font-weight: 700;
 }
 
@@ -488,12 +523,13 @@
 
   .product-detail__summary {
     position: sticky;
-    top: var(--space-5);
+    top: calc(var(--header-height) + var(--space-5));
   }
 }
 
 .gallery .image-frame {
-  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .gallery__thumbs {
@@ -513,7 +549,7 @@
   border-radius: var(--radius);
   background: var(--color-surface-muted);
   cursor: pointer;
-  transition: border-color 140ms ease;
+  transition: border-color 150ms ease;
 }
 
 .gallery__thumb:hover {
@@ -521,7 +557,7 @@
 }
 
 .gallery__thumb[aria-pressed="true"] {
-  border-color: var(--color-accent);
+  border-color: var(--color-brand);
 }
 
 .gallery__thumb img {
@@ -531,7 +567,8 @@
 
 .product-detail__name {
   margin-bottom: var(--space-4);
-  font-size: var(--text-3xl);
+  font-size: clamp(1.875rem, 1.4rem + 1.6vw, 2.75rem);
+  font-stretch: 80%;
 }
 
 .product-detail__description {
@@ -540,31 +577,33 @@
   white-space: pre-line;
 }
 
-/* Price and the quote action, set apart in a white panel. */
+/* Price and the quote action on a raised white card with a brand-red edge. */
 .product-detail__buy {
   padding: var(--space-5);
-  border-top: 3px solid var(--color-navy);
-  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-brand);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow);
 }
 
 .product-detail__price {
   margin-bottom: var(--space-1);
-  color: var(--color-navy);
+  color: var(--color-ink);
+  font-family: var(--font-serif);
   font-size: clamp(2rem, 1.6rem + 1.4vw, 2.75rem);
   font-stretch: var(--stretch-display);
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .product-detail__unit {
   color: var(--color-text-muted);
+  font-family: var(--font-sans);
   font-size: var(--text-base);
   font-stretch: 100%;
   font-weight: 400;
-  letter-spacing: 0;
 }
 
 .product-detail__moq {
@@ -591,7 +630,7 @@
   margin-top: var(--space-8);
 }
 
-/* Specifications: the heading in a side column, the values as a ruled technical sheet. */
+/* Specifications: the heading in a side column, the values as a striped technical sheet. */
 .spec-sheet {
   display: grid;
   gap: var(--space-4) var(--space-7);
@@ -609,38 +648,42 @@
 
 .spec-table {
   width: 100%;
-  border-collapse: collapse;
-  border-top: 2px solid var(--color-navy);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-surface);
 }
 
 .spec-table th,
 .spec-table td {
-  padding: var(--space-3) var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
   text-align: left;
   vertical-align: top;
 }
 
+.spec-table tr + tr th,
+.spec-table tr + tr td {
+  border-top: 1px solid var(--color-border);
+}
+
 .spec-table th {
   width: 42%;
+  background: var(--color-surface-hover);
   color: var(--color-text-muted);
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .spec-table td {
-  color: var(--color-text);
+  color: var(--color-ink);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 
-.spec-table tr:hover th,
-.spec-table tr:hover td {
-  background: var(--color-surface);
-}
-
-/* Videos and brochure: a navy band right after the specifications. */
+/* Videos and brochure: a charcoal band right after the specifications. */
 .product-resources {
-  background: var(--color-navy);
+  background: var(--gradient-ink);
   color: var(--color-text-inverse-muted);
 }
 
@@ -676,11 +719,11 @@
 }
 
 .product-resources a:not(.button):hover {
-  color: var(--color-accent);
+  color: var(--color-brand-on-dark);
 }
 
 .product-resources :focus-visible {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-text-inverse);
 }
 
 .product-resources .muted {
@@ -715,9 +758,10 @@
   position: relative;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   /* Shown until the player loads, or if it can't. */
-  background: var(--color-navy-deep);
+  background: var(--color-ink-deep);
+  box-shadow: var(--shadow-raised);
 }
 
 .video__frame iframe {
@@ -737,6 +781,9 @@
 }
 
 .video__title {
-  color: var(--color-text-inverse);
   font-weight: 700;
+}
+
+.product-resources .video__title {
+  color: var(--color-text-inverse);
 }

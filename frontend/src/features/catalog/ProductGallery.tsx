@@ -5,9 +5,11 @@ import { ProductImageFrame } from "./ProductImageFrame";
 type ProductGalleryProps = {
   images: ProductImage[];
   productName: string;
+  // Shown in the empty frame when there are no photos yet.
+  placeholderLabel?: string;
 };
 
-export function ProductGallery({ images, productName }: ProductGalleryProps) {
+export function ProductGallery({ images, productName, placeholderLabel }: ProductGalleryProps) {
   const [selected, setSelected] = useState(0);
   const current = images[selected] ?? images[0];
 
@@ -17,6 +19,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         src={current?.imageUrl}
         alt={images.length > 1 ? `${productName}, image ${selected + 1} of ${images.length}` : productName}
         eager
+        placeholderLabel={placeholderLabel}
       />
 
       {images.length > 1 && (

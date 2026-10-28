@@ -1,8 +1,10 @@
-/* Design tokens. Components use these variables instead of raw values. */
+/* Design tokens. Components use these variables instead of raw values.
+   Brand: the Devdutt wordmark is a heavy red serif on white with black detailing, so the site pairs
+   a deep charcoal for structure with one restrained brand red, on warm white. */
 
-/* Noto Sans variable (weight 100–900, width 62.5–100%), self-hosted and split like Google Fonts:
-   the Latin file covers the text; Latin Extended adds the rupee sign (U+20B9) and is only
-   downloaded when a page shows one. */
+/* Self-hosted variable fonts (weight 100–900, width 62.5–100%), split like Google Fonts: the Latin
+   file covers the text; Latin Extended adds the rupee sign (U+20B9) and is only downloaded when a
+   page shows one. Noto Serif echoes the wordmark in headings; Noto Sans carries everything else. */
 @font-face {
   font-family: "Noto Sans";
   src: url("/fonts/NotoSans-Variable-latin.woff2") format("woff2");
@@ -25,53 +27,88 @@
     U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+@font-face {
+  font-family: "Noto Serif";
+  src: url("/fonts/NotoSerif-Variable-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Noto Serif";
+  src: url("/fonts/NotoSerif-Variable-latin-ext.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
-  /* Surfaces: a warm off-white page, white panels, and one warm tone step for insets. */
-  --color-bg: #f7f5f0;
+  /* Surfaces: warm white page, white panels, one warm tone step for insets. */
+  --color-bg: #faf8f5;
   --color-surface: #ffffff;
-  --color-surface-muted: #efece5;
-  --color-border: #e1ddd3;
+  --color-surface-muted: #f1eee9;
+  --color-surface-hover: #f7f5f1;
+  --color-border: #e3dfd8;
   /* Form controls: 3:1 against white so their edges stay visible. */
-  --color-border-strong: #8f8a80;
+  --color-border-strong: #8d8983;
 
   /* Text */
-  --color-text: #17202c;
-  --color-text-muted: #545e6c;
+  --color-text: #18191c;
+  --color-text-muted: #5a5e66;
   --color-text-inverse: #ffffff;
-  --color-text-inverse-muted: #b9c4d4;
+  --color-text-inverse-muted: #bdb9b2;
 
-  /* Brand: ink navy for structure, amber used sparingly as the accent.
-     Amber is only a fill behind dark text; amber text uses the darker shade (4.5:1+ on white and the page). */
-  --color-navy: #13263f;
-  --color-navy-hover: #1e3a5c;
-  --color-navy-deep: #0c1a2c;
-  --color-steel: #64748b;
-  --color-accent: #e88924;
-  --color-accent-hover: #d27615;
-  --color-accent-text: #a4570b;
+  /* Ink: deep charcoal for structure (hero, footer, workspace sidebar, primary buttons). */
+  --color-ink: #1b1c1f;
+  --color-ink-hover: #2e3035;
+  --color-ink-raised: #26282d;
+  --color-ink-deep: #121315;
+  --color-steel: #70747b;
 
-  /* Feedback */
-  --color-danger: #b91c1c;
-  --color-danger-bg: #fef2f2;
-  --color-success: #15803d;
-  --color-success-bg: #f0fdf4;
-  --color-info: #1d4ed8;
-  --color-info-bg: #eff6ff;
+  /* Brand red: used sparingly for the main action, the active state and key highlights.
+     A touch deeper than the wordmark red so text and buttons pass contrast (7:1 on white). */
+  --color-brand: #b3121b;
+  --color-brand-hover: #93101a;
+  --color-brand-deep: #6e0c12;
+  --color-brand-tint: #fbecec;
+  --color-brand-text: #b3121b;
+  /* For red details on charcoal, where the brand red is too dark to read. */
+  --color-brand-on-dark: #ff6b72;
 
-  --focus-ring: 2px solid var(--color-accent-text);
+  /* Feedback. Errors use a warmer orange-red with an explicit title, so they don't read as branding. */
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
+  --color-success: #13804a;
+  --color-success-bg: #effaf3;
+  --color-info: #2453a6;
+  --color-info-bg: #eef4fd;
+  --color-warning: #8a4b06;
+  --color-warning-bg: #fdf3e2;
 
-  /* Type: one family. Headings use a narrower width for a compact, engineered voice. */
+  /* Focus: charcoal on light surfaces, white on dark ones; red would read as an error. */
+  --focus-ring: 2px solid var(--color-ink);
+
+  /* Type */
   --font-sans: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  --stretch-display: 82%;
+  --font-serif: "Noto Serif", Georgia, "Times New Roman", serif;
+  --stretch-display: 87.5%;
+  --text-xs: 0.8125rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.375rem;
   --text-2xl: clamp(1.5rem, 1.25rem + 1vw, 2rem);
   --text-3xl: clamp(2rem, 1.5rem + 2.2vw, 3.25rem);
-  --text-display: clamp(2.5rem, 1.2rem + 5.4vw, 5.25rem);
+  --text-display: clamp(2.25rem, 1.1rem + 4.6vw, 4.5rem);
   --leading-tight: 1.15;
-  --leading-display: 0.98;
+  --leading-display: 1.02;
   --leading-normal: 1.6;
 
   /* Spacing (4px scale) */
@@ -85,13 +122,20 @@
   --space-8: 4rem;
   --space-9: 6rem;
 
-  /* Shape: near-square corners; shadows only on hover and on things that float. */
-  --radius: 2px;
-  --shadow: 0 1px 2px rgba(19, 38, 63, 0.06), 0 2px 6px rgba(19, 38, 63, 0.06);
-  --shadow-raised: 0 2px 4px rgba(19, 38, 63, 0.06), 0 14px 32px rgba(19, 38, 63, 0.1);
+  /* Shape and depth: small radii, soft layered shadows used only where something is raised. */
+  --radius: 4px;
+  --radius-lg: 8px;
+  --shadow-sm: 0 1px 2px rgba(24, 25, 28, 0.06);
+  --shadow: 0 1px 2px rgba(24, 25, 28, 0.05), 0 4px 12px rgba(24, 25, 28, 0.06);
+  --shadow-raised: 0 2px 4px rgba(24, 25, 28, 0.05), 0 16px 36px rgba(24, 25, 28, 0.12);
+
+  /* Charcoal fields: a quiet shift towards graphite with a faint warmth of the brand red. */
+  --gradient-ink: radial-gradient(120% 140% at 100% 0%, rgba(179, 18, 27, 0.22) 0%, rgba(179, 18, 27, 0) 45%),
+    linear-gradient(160deg, #1b1c1f 0%, #24262b 55%, #1b1c1f 100%);
 
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   --content-width: 80rem;
   --narrow-width: 46rem;
+  --header-height: 5rem;
 }

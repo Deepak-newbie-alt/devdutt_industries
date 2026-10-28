@@ -22,6 +22,38 @@ const ACTION_LABELS: Record<OrderStatus, string> = {
   CANCELLED: "Cancel order",
 };
 
+// The order's path from confirmation to delivery, with the current status marked. Cancelled
+// orders have no position on this path, so they show no progress.
+const PROGRESS: OrderStatus[] = ["CONFIRMED", "IN_PRODUCTION", "READY", "DISPATCHED", "DELIVERED"];
+
+function OrderProgress({ status }: { status: OrderStatus }) {
+  const current = PROGRESS.indexOf(status);
+
+  if (current === -1) {
+    return null;
+  }
+
+  return (
+    <ol className="progress" aria-label="Order progress">
+      {PROGRESS.map((step, index) => (
+        <li
+          key={step}
+          className={
+            index < current
+              ? "progress__step progress__step--done"
+              : index === current
+                ? "progress__step progress__step--current"
+                : "progress__step"
+          }
+          aria-current={index === current ? "step" : undefined}
+        >
+          <span className="progress__label">{ORDER_STATUS_LABELS[step]}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function describe(activity: OrderActivity) {
   if (activity.activityType === "CREATED") return "Order created";
   if (activity.activityType === "NOTE_ADDED") return "Note";
@@ -132,6 +164,8 @@ export function OrderDetailPage() {
         <h1>{data.orderNumber}</h1>
         <OrderStatusBadge status={data.status} />
       </header>
+
+      <OrderProgress status={data.status} />
 
       {error && (
         <StatusMessage tone="error" title="That didn't work">

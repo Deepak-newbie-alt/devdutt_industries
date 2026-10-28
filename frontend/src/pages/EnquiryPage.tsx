@@ -13,7 +13,7 @@ import { formatPrice, formatUnit } from "../utils/format";
 function MachineSummary({ product }: { product: Product }) {
   return (
     <aside className="enquiry-machine" aria-label="Machine you're asking about">
-      <ProductImageFrame src={product.images[0]?.imageUrl} alt="" eager />
+      <ProductImageFrame src={product.images[0]?.imageUrl} alt="" eager placeholderLabel={product.category.name} />
       <div className="enquiry-machine__body">
         <p className="enquiry-machine__category">{product.category.name}</p>
         <p className="enquiry-machine__name">{product.name}</p>
@@ -21,6 +21,14 @@ function MachineSummary({ product }: { product: Product }) {
           {formatPrice(product.price)} <span className="muted">per {formatUnit(product.unit)}</span>
         </p>
         <Link to={`/machines/${product.id}`}>View machine details</Link>
+      </div>
+      <div className="enquiry-next">
+        <p className="enquiry-next__title">What happens next</p>
+        <ol className="enquiry-next__list">
+          <li>We confirm your mobile number with a one-time code.</li>
+          <li>Our sales team prepares a quotation for your requirement.</li>
+          <li>You can follow it any time from My enquiries.</li>
+        </ol>
       </div>
     </aside>
   );

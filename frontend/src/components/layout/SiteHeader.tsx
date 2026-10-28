@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { useCompanyInfo } from "../../context/CompanyInfoContext";
+import { Logo } from "../brand/Logo";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "site-nav__link site-nav__link--active" : "site-nav__link";
@@ -38,8 +39,7 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="container site-header__inner">
         <Link to="/" className="brand" aria-label="Devdutt Industries home">
-          <span className="brand__mark" aria-hidden="true">DI</span>
-          <span className="brand__name">Devdutt Industries</span>
+          <Logo />
         </Link>
 
         <button

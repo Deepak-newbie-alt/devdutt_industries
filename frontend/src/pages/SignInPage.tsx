@@ -1,9 +1,10 @@
 import { SignIn } from "@clerk/react";
 import { Link } from "react-router";
+import { Logo } from "../components/brand/Logo";
 
 // Clerk's form in the site's colours and type (appearance only).
 const SIGN_IN_APPEARANCE = {
-  variables: { colorPrimary: "#13263f", borderRadius: "2px", fontFamily: "inherit" },
+  variables: { colorPrimary: "#1b1c1f", borderRadius: "4px", fontFamily: "inherit" },
   elements: { footerAction: { display: "none" } },
 };
 
@@ -14,11 +15,8 @@ export function SignInPage() {
     <div className="sign-in">
       <title>Staff sign-in | Devdutt Industries</title>
       <div className="sign-in__intro">
-        <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden="true">
-            DI
-          </span>
-          <span className="brand__name">Devdutt Industries</span>
+        <Link to="/" className="sign-in__brand logo-plate" aria-label="Devdutt Industries home">
+          <Logo />
         </Link>
         <div>
           <h1 className="sign-in__title">Staff sign-in</h1>

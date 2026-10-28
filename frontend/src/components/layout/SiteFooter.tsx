@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { useCompanyInfo } from "../../context/CompanyInfoContext";
+import { Logo } from "../brand/Logo";
 import { Spinner } from "../ui/Spinner";
 
 // Address and contact details from the public company settings; email and website only when set.
@@ -99,13 +100,38 @@ function CompanyName() {
   return <>{company.status === "success" ? company.data.companyName : "Devdutt Industries"}</>;
 }
 
+// The closing call to action: the sales phone (once loaded) and the catalog.
+function FooterActions() {
+  const company = useCompanyInfo();
+  const phone = company.status === "success" ? company.data.phone : null;
+
+  return (
+    <div className="button-row">
+      {phone && (
+        <a href={`tel:${phone.replace(/s+/g, "")}`} className="button button--accent button--large">
+          Call {phone}
+        </a>
+      )}
+      <Link to="/machines" className="button button--inverse button--large">
+        Browse machines
+      </Link>
+    </div>
+  );
+}
+
 export function SiteFooter() {
   return (
     <footer className="site-footer" id="contact">
       <div className="container site-footer__inner">
-        <h2 className="site-footer__name">
-          <CompanyName />
-        </h2>
+        <div className="site-footer__lead">
+          <div>
+            <span className="logo-plate">
+              <Logo />
+            </span>
+            <h2 className="site-footer__title">Have a requirement? Talk to our sales team.</h2>
+          </div>
+          <FooterActions />
+        </div>
         <div className="site-footer__columns">
           <CompanyContact />
           <FooterLinks />

@@ -63,7 +63,7 @@ export function ProductDetailPage() {
 
         <div className="product-detail">
           <div className="product-detail__media">
-            <ProductGallery images={machine.images} productName={machine.name} />
+            <ProductGallery images={machine.images} productName={machine.name} placeholderLabel={machine.category.name} />
           </div>
 
           <div className="product-detail__summary">
