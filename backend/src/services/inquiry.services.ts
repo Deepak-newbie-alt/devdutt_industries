@@ -36,6 +36,22 @@ export const InquiryService={
             // The code is used up only if the inquiry is created.
             await CustomerOtpService.consume(tx,body.challengeId);
 
+            // Same rule as the public catalog: inactive products can't be enquired about.
+            // Throwing here rolls back the consume, so the code stays usable.
+            const product=await tx.product.findFirst({
+                where:{
+                    id:body.productId,
+                    status:"ACTIVE"
+                },
+                select:{
+                    id:true
+                }
+            })
+
+            if(!product){
+                throw new ApiError(404,"This product is no longer available for enquiries");
+            }
+
             const inquiry=await tx.inquiry.create({
             data:{
                 productId:body.productId,

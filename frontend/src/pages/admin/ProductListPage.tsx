@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { CATALOG_STATUS_LABELS, CATALOG_STATUSES, listAdminCategories, listAdminProducts } from "../../api/admin";
+import { CATALOG_STATUS_LABELS, CATALOG_STATUSES, listAdminProducts, listAllAdminCategories } from "../../api/admin";
 import { useEmployee } from "../../auth/EmployeeContext";
 import { LoadError } from "../../components/ui/LoadError";
 import { LoadingState } from "../../components/ui/LoadingState";
@@ -27,7 +27,7 @@ export function ProductListPage() {
     [searchParams.toString()],
   );
   // For the category filter; the backend returns at most 100 per page.
-  const categories = useApiQuery((signal) => listAdminCategories(request, { page: 1, limit: 100 }, signal), []);
+  const categories = useApiQuery((signal) => listAllAdminCategories(request, signal), []);
 
   const hrefFor = (changes: { status?: CatalogStatus | null; category?: number | null; q?: string; page?: number }) => {
     const query = new URLSearchParams();
@@ -82,7 +82,7 @@ export function ProductListPage() {
             >
               <option value="">All categories</option>
               {categories.status === "success" &&
-                categories.data.category.map((category) => (
+                categories.data.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                     {category.status !== "ACTIVE" ? ` (${CATALOG_STATUS_LABELS[category.status].toLowerCase()})` : ""}

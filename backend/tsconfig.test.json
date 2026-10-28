@@ -1,0 +1,10 @@
+{
+  // Builds the app and the tests together into dist-test/ (gitignored); see "npm test".
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*", "tests/**/*"],
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist-test",
+    "sourceMap": false
+  }
+}

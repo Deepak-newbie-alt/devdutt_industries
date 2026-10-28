@@ -152,6 +152,18 @@ export function listAdminCategories(
   return request<AdminCategoryList>(`/category/admin?${listQuery(page, limit, { status, search })}`, { signal });
 }
 
+// Every category, for dropdowns: the backend returns at most 100 per page, so read them all.
+export async function listAllAdminCategories(request: AuthedRequest, signal?: AbortSignal) {
+  const first = await listAdminCategories(request, { page: 1, limit: 100 }, signal);
+  const categories = [...first.category];
+
+  for (let page = 2; page <= first.meta.totalPages; page++) {
+    categories.push(...(await listAdminCategories(request, { page, limit: 100 }, signal)).category);
+  }
+
+  return categories;
+}
+
 export function getAdminCategory(request: AuthedRequest, categoryId: number, signal?: AbortSignal) {
   return request<AdminCategory>(`/category/admin/${categoryId}`, { signal });
 }

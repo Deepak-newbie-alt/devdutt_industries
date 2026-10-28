@@ -6,7 +6,7 @@ import {
   CATALOG_STATUSES,
   createProduct,
   getAdminProduct,
-  listAdminCategories,
+  listAllAdminCategories,
   serverFieldErrors,
   slugify,
   updateProduct,
@@ -48,7 +48,7 @@ export function ProductEditPage() {
     [productId],
   );
   // Every category, any status; the backend returns at most 100 per page.
-  const categories = useApiQuery((signal) => listAdminCategories(request, { page: 1, limit: 100 }, signal), []);
+  const categories = useApiQuery((signal) => listAllAdminCategories(request, signal), []);
 
   if (product.status === "loading" || categories.status === "loading") {
     return (
@@ -89,7 +89,7 @@ export function ProductEditPage() {
     <ProductEditor
       key={productId ?? "new"}
       existing={product.data}
-      categories={categories.data.category}
+      categories={categories.data}
       onSaved={product.reload}
     />
   );
