@@ -46,6 +46,9 @@ export const categoryService={
             },
             include:{
                 products:{
+                    where:{
+                        status:"ACTIVE"
+                    },
                     select:{
                         id:true,
                         name:true,
@@ -77,11 +80,16 @@ export const categoryService={
     getCategoryById:async(params:TgetCategoryByIdParams["params"])=>{
         const {categoryId}=params;
         const prismaQuery:Prisma.CategoryFindUniqueArgs={
+            // Public endpoint: inactive categories are treated as not found.
             where: {
                 id: categoryId,
+                status: "ACTIVE",
             },
             include:{
                 products:{
+                    where:{
+                        status:"ACTIVE"
+                    },
                     select:{
                         id:true,
                         name:true,

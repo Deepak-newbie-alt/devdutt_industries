@@ -70,26 +70,22 @@ export const productService={
                 select:{
                     id:true,
                     imageUrl:true
-                }
+                },
+                orderBy:[{displayOrder:"asc"},{id:"asc"}]
             },
             videos:{
                 select:{
                     id:true,
-                    youtubeUrl:true
-                }
+                    youtubeUrl:true,
+                    title:true
+                },
+                orderBy:[{displayOrder:"asc"},{id:"asc"}]
             },
             brochure:{
                 select:{
                     id:true,
-                    fileName:true
-                }
-            },
-            inquiries:{
-                select:{
-                    id:true,
-                    salespersonId:true,
-                    requirement:true,
-                    phoneNumber:true
+                    fileName:true,
+                    fileUrl:true
                 }
             }
         }
@@ -120,9 +116,11 @@ export const productService={
     findProductById:async(params:TgetProductByIdParams["params"])=>{
     const {productId}=params;
 
+    // Public endpoint: unpublished products are treated as not found.
     const product=await prisma.product.findUnique({
         where:{
-            id:productId
+            id:productId,
+            status:"ACTIVE"
         },
         include: {
             category: {
@@ -136,26 +134,22 @@ export const productService={
                 select:{
                     id:true,
                     imageUrl:true
-                }
+                },
+                orderBy:[{displayOrder:"asc"},{id:"asc"}]
             },
             videos:{
                 select:{
                     id:true,
-                    youtubeUrl:true
-                }
+                    youtubeUrl:true,
+                    title:true
+                },
+                orderBy:[{displayOrder:"asc"},{id:"asc"}]
             },
             brochure:{
                 select:{
                     id:true,
-                    fileName:true
-                }
-            },
-            inquiries:{
-                select:{
-                    id:true,
-                    salespersonId:true,
-                    requirement:true,
-                    phoneNumber:true
+                    fileName:true,
+                    fileUrl:true
                 }
             }
         }
