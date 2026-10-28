@@ -89,13 +89,28 @@ export const revisionIdParamsSchema=z.object({
 
 export type TrevisionIdParams=z.infer<typeof revisionIdParamsSchema>;
 
-// Customer accept/reject/request-revision: the OTP is checked and consumed by the action.
+// Token from the customer's quotation link (32 random bytes, base64url).
+export const customerAccessTokenSchema=z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{43}$/,"Invalid quotation link");
+
+// Customer accept/reject/request-revision: the link token and the OTP are both required.
 export const customerRevisionResponseSchema=z.object({
     params:revisionIdParamsSchema.shape.params,
-    body:otpVerificationSchema
+    body:otpVerificationSchema.extend({
+        token:customerAccessTokenSchema
+    })
 })
 
 export type TcustomerRevisionResponse=z.infer<typeof customerRevisionResponseSchema>;
+
+export const customerQuotationLookupSchema=z.object({
+    body:z.object({
+        token:customerAccessTokenSchema
+    })
+})
+
+export type TcustomerQuotationLookup=z.infer<typeof customerQuotationLookupSchema>;
 
 const quotationItemSchema = z.object({
     name: z

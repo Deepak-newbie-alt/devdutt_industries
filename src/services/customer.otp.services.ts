@@ -1,9 +1,10 @@
-import { createHmac, randomBytes, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 
 import prisma from "../lib/prisma.js";
 import { smsSender } from "../lib/sms.js";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
+import { hashCustomerAccessToken } from "../utils/customerAccessToken.js";
 import type { CustomerOtpPurpose, Prisma } from "../generated/prisma/client.js";
 
 const CODE_TTL_SECONDS = 5 * 60;
@@ -22,7 +23,13 @@ const QUOTATION_PURPOSES = [
 
 type TquotationOtpPurpose = (typeof QUOTATION_PURPOSES)[number];
 
+// Quotation codes are requested with the customer's link token, never a revision id.
 export type TotpTarget =
+    | { purpose: "INQUIRY_SUBMISSION"; phoneNumber: string }
+    | { purpose: TquotationOtpPurpose; token: string };
+
+// Target after the link token is resolved; limits and locks are keyed on this.
+type TlimitTarget =
     | { purpose: "INQUIRY_SUBMISSION"; phoneNumber: string }
     | { purpose: TquotationOtpPurpose; revisionId: number };
 
@@ -59,17 +66,17 @@ function tooManyRequests(): ApiError {
     return new ApiError(429, "Too many requests. Try again later.");
 }
 
-// Phone of a quotation the customer may still respond to; null when unknown or ineligible.
-async function findQuotationPhone(revisionId: number): Promise<string | null> {
-    const revision = await prisma.quotationRevision.findFirst({
+// Revision behind a link token, if the customer may still respond. Only link holders
+// get this far, so the errors can say what is wrong.
+async function findRespondableRevision(token: string) {
+    const revision = await prisma.quotationRevision.findUnique({
         where: {
-            id: revisionId,
-            quotationRevisionStatus: "SENT",
-            validUntil: {
-                gte: getTodayInIndiaDbDate()
-            }
+            customerAccessTokenHash: hashCustomerAccessToken(token)
         },
         select: {
+            id: true,
+            quotationRevisionStatus: true,
+            validUntil: true,
             quotation: {
                 select: {
                     inquiry: {
@@ -82,13 +89,45 @@ async function findQuotationPhone(revisionId: number): Promise<string | null> {
         }
     });
 
-    return revision?.quotation.inquiry.phoneNumber ?? null;
+    if (!revision) {
+        throw new ApiError(404, "This quotation link is invalid");
+    }
+
+    if (
+        revision.quotationRevisionStatus !== "SENT" ||
+        revision.validUntil < getTodayInIndiaDbDate()
+    ) {
+        throw new ApiError(409, "This quotation can no longer be responded to");
+    }
+
+    return {
+        revisionId: revision.id,
+        phoneNumber: revision.quotation.inquiry.phoneNumber
+    };
 }
 
-// Limits use only keys known before any eligibility lookup, so a 429 reveals nothing.
+// Quotation codes always go to the inquiry's phone, found through the link token.
+async function resolveTarget(target: TotpTarget): Promise<{
+    limitTarget: TlimitTarget;
+    phoneNumber: string;
+    resourceId: number | null;
+}> {
+    if (target.purpose === "INQUIRY_SUBMISSION") {
+        return { limitTarget: target, phoneNumber: target.phoneNumber, resourceId: null };
+    }
+
+    const revision = await findRespondableRevision(target.token);
+
+    return {
+        limitTarget: { purpose: target.purpose, revisionId: revision.revisionId },
+        phoneNumber: revision.phoneNumber,
+        resourceId: revision.revisionId
+    };
+}
+
 async function assertWithinLimits(
     tx: Prisma.TransactionClient,
-    target: TotpTarget,
+    target: TlimitTarget,
     requestIpHash: string,
     now: Date
 ) {
@@ -138,11 +177,14 @@ async function assertWithinLimits(
         }
     });
 
+    // Codes revoked by a link reissue still count toward the hourly limit, but not the
+    // cooldown, so the customer can request a code on the new link straight away.
     const recentCount = await tx.customerOtpChallenge.count({
         where: {
             purpose: target.purpose,
             resourceId: target.revisionId,
-            createdAt: { gte: cooldownStart }
+            createdAt: { gte: cooldownStart },
+            revokedAt: null
         }
     });
 
@@ -156,21 +198,18 @@ export const CustomerOtpService = {
         const requestIpHash = hmac(`ip:${ip}`);
         const isInquiry = target.purpose === "INQUIRY_SUBMISSION";
 
-        const phoneNumber = isInquiry
-            ? target.phoneNumber
-            : await findQuotationPhone(target.revisionId);
-        const resourceId = isInquiry ? null : target.revisionId;
+        const { limitTarget, phoneNumber, resourceId } = await resolveTarget(target);
 
-        const targetKey = isInquiry
-            ? `${target.purpose}:${target.phoneNumber}`
-            : `${target.purpose}:${target.revisionId}`;
+        const targetKey = limitTarget.purpose === "INQUIRY_SUBMISSION"
+            ? `${limitTarget.purpose}:${limitTarget.phoneNumber}`
+            : `${limitTarget.purpose}:${limitTarget.revisionId}`;
 
         const lockKeys = [
             `otp:ip:${requestIpHash}`,
             `otp:target:${targetKey}`,
-            isInquiry
-                ? `otp:phone:${target.phoneNumber}`
-                : `otp:revision:${target.revisionId}`
+            limitTarget.purpose === "INQUIRY_SUBMISSION"
+                ? `otp:phone:${limitTarget.phoneNumber}`
+                : `otp:revision:${limitTarget.revisionId}`
         ].sort();
 
         const challengeId = randomUUID();
@@ -183,18 +222,31 @@ export const CustomerOtpService = {
                 await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
             }
 
-            await assertWithinLimits(tx, target, requestIpHash, now);
+            // The link may have been reissued since the token was resolved; the revision lock
+            // orders this check against revokeQuotationChallenges.
+            if (target.purpose !== "INQUIRY_SUBMISSION") {
+                const linkStillCurrent = await tx.quotationRevision.count({
+                    where: {
+                        id: resourceId!,
+                        customerAccessTokenHash: hashCustomerAccessToken(target.token)
+                    }
+                });
 
-            // Unsent until delivery succeeds; placeholders (no phone) are never usable.
+                if (linkStillCurrent === 0) {
+                    throw new ApiError(404, "This quotation link is invalid");
+                }
+            }
+
+            await assertWithinLimits(tx, limitTarget, requestIpHash, now);
+
+            // Unsent until delivery succeeds.
             return tx.customerOtpChallenge.create({
                 data: {
                     id: challengeId,
                     purpose: target.purpose,
                     phoneNumber,
                     resourceId,
-                    codeHash: phoneNumber
-                        ? hashCode(challengeId, code)
-                        : hmac(randomBytes(32).toString("hex")),
+                    codeHash: hashCode(challengeId, code),
                     expiresAt: new Date(now.getTime() + CODE_TTL_SECONDS * 1000),
                     requestIpHash
                 },
@@ -207,11 +259,6 @@ export const CustomerOtpService = {
             expiresInSeconds: CODE_TTL_SECONDS,
             resendAfterSeconds: RESEND_COOLDOWN_SECONDS
         };
-
-        // Ineligible or unknown quotation: same response, nothing sent.
-        if (!phoneNumber) {
-            return response;
-        }
 
         try {
             await smsSender.send(
@@ -306,6 +353,27 @@ export const CustomerOtpService = {
         if (!isValid) {
             throw invalidCode();
         }
+    },
+
+    // Called when a revision's customer link is replaced: codes requested through the old
+    // link stop working. Takes the same revision lock as challenge creation.
+    revokeQuotationChallenges: async (tx: Prisma.TransactionClient, revisionId: number) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`otp:revision:${revisionId}`}, 0))`;
+
+        const now = new Date();
+
+        await tx.customerOtpChallenge.updateMany({
+            where: {
+                purpose: { in: QUOTATION_PURPOSES },
+                resourceId: revisionId,
+                consumedAt: null,
+                expiresAt: { gt: now }
+            },
+            data: {
+                expiresAt: now,
+                revokedAt: now
+            }
+        });
     },
 
     // First statement of the action's transaction: single use, atomic with the action.

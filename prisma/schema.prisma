@@ -240,6 +240,8 @@ model QuotationRevision {
 
   terms         Json
   validUntil    DateTime @db.Date
+  // SHA-256 of the customer response-link token; the token itself is never stored.
+  customerAccessTokenHash String? @unique @db.Char(64)
   salespersonId Int
   salesperson   User     @relation(fields: [salespersonId], references: [id], onDelete: Restrict)
 
@@ -422,6 +424,8 @@ model CustomerOtpChallenge {
   sentAt        DateTime?
   expiresAt     DateTime
   consumedAt    DateTime?
+  // Set when the quotation link is reissued; revoked codes don't hold the resend cooldown.
+  revokedAt     DateTime?
   requestIpHash String    @db.Char(64)
 
   createdAt DateTime @default(now())

@@ -7,8 +7,14 @@ import type {
     TquotationItem,
     TrevisionIdParams,
     TsendQuotation,
-    TcustomerRevisionResponse
+    TcustomerRevisionResponse,
+    TcustomerQuotationLookup
 } from "../schemas/quotationSchema.js";
+import {
+    buildCustomerQuotationLink,
+    generateCustomerAccessToken,
+    hashCustomerAccessToken
+} from "../utils/customerAccessToken.js";
 import { CustomerOtpService } from "./customer.otp.services.js";
 import { createHash } from "node:crypto";
 import ApiError from "../utils/ApiError.js";
@@ -238,6 +244,9 @@ export const QuotationService = {
                 throw new ApiError(403,"Forbidden, can't access other salesperson's resource");
             }
 
+            // The customer's response link; only its hash is stored.
+            const {token,tokenHash}=generateCustomerAccessToken();
+
             // Claim the draft first; the row lock makes concurrent edits and sends wait, then fail.
             const result=await tx.quotationRevision.updateMany({
                 where:{
@@ -248,7 +257,8 @@ export const QuotationService = {
                     }
                 },
                 data:{
-                    quotationRevisionStatus:"SENT"
+                    quotationRevisionStatus:"SENT",
+                    customerAccessTokenHash:tokenHash
                 }
             })
 
@@ -308,14 +318,100 @@ export const QuotationService = {
                             amount:true
                         }
                     }
+                },
+                omit:{
+                    customerAccessTokenHash:true
                 }
             })
 
-            return {...revision,document};
+            // Shown only here (or on reissue); share it with the PDF.
+            return {...revision,document,customerLink:buildCustomerQuotationLink(token)};
         },{
             // Rendering happens inside the transaction, so allow more than the 5s default.
             timeout:15000
         })
+    },
+    // New response link for a sent revision (lost link or revoking the old one).
+    reissueCustomerLink:async(params:TrevisionIdParams["params"],salespersonId:number)=>{
+        const revision=await prisma.quotationRevision.findUnique({
+            where:{
+                id:params.revisionId
+            },
+            select:{
+                salespersonId:true
+            }
+        })
+
+        if(!revision){
+            throw new ApiError(404,"Quotation revision not found");
+        }
+
+        if(revision.salespersonId!==salespersonId){
+            throw new ApiError(403,"Forbidden, can't access other salesperson's resource");
+        }
+
+        const {token,tokenHash}=generateCustomerAccessToken();
+
+        // Replacing the hash invalidates the previous link and any code requested through it.
+        return await prisma.$transaction(async(tx)=>{
+            await CustomerOtpService.revokeQuotationChallenges(tx,params.revisionId);
+
+            const result=await tx.quotationRevision.updateMany({
+                where:{
+                    id:params.revisionId,
+                    quotationRevisionStatus:"SENT",
+                    validUntil:{
+                        gte:getTodayInIndiaDbDate()
+                    }
+                },
+                data:{
+                    customerAccessTokenHash:tokenHash
+                }
+            })
+
+            if(result.count===0){
+                throw new ApiError(409,"Links can only be issued for sent, unexpired quotations");
+            }
+
+            return {
+                revisionId:params.revisionId,
+                customerLink:buildCustomerQuotationLink(token)
+            };
+        })
+    },
+    // What the customer page needs to show for a link: no buyer details, no prices.
+    getCustomerQuotation:async(body:TcustomerQuotationLookup["body"])=>{
+        const revision=await prisma.quotationRevision.findUnique({
+            where:{
+                customerAccessTokenHash:hashCustomerAccessToken(body.token)
+            },
+            select:{
+                id:true,
+                revisionNumber:true,
+                quotationRevisionStatus:true,
+                validUntil:true,
+                quotation:{
+                    select:{
+                        quotationNumber:true
+                    }
+                }
+            }
+        })
+
+        if(!revision){
+            throw new ApiError(404,"This quotation link is invalid");
+        }
+
+        return {
+            revisionId:revision.id,
+            quotationNumber:revision.quotation.quotationNumber,
+            revisionNumber:revision.revisionNumber,
+            quotationRevisionStatus:revision.quotationRevisionStatus,
+            validUntil:revision.validUntil,
+            canRespond:
+                revision.quotationRevisionStatus==="SENT" &&
+                revision.validUntil>=getTodayInIndiaDbDate()
+        };
     },
     getIssuedDocument:async(params:TrevisionIdParams["params"],actor:Actor)=>{
         const revision=await prisma.quotationRevision.findUnique({
@@ -557,6 +653,9 @@ export const QuotationService = {
                 select: quotationDocumentSummarySelect,
             },
             },
+            omit: {
+                customerAccessTokenHash: true,
+            },
             orderBy: {
                 revisionNumber: "asc",
             },
@@ -580,6 +679,8 @@ export const QuotationService = {
                 where:{
                         id:revisionId,
                         quotationRevisionStatus:"SENT",
+                        // The link token must match, so a reissued link revokes the old one.
+                        customerAccessTokenHash:hashCustomerAccessToken(body.token),
                         validUntil:{
                             gte:getTodayInIndiaDbDate()
                         }
@@ -717,6 +818,8 @@ export const QuotationService = {
                 where:{
                     id:revisionId,
                     quotationRevisionStatus:"SENT",
+                    // The link token must match, so a reissued link revokes the old one.
+                    customerAccessTokenHash:hashCustomerAccessToken(body.token),
                     validUntil:{
                         gte: getTodayInIndiaDbDate()
                     }
@@ -799,6 +902,8 @@ export const QuotationService = {
                 where:{
                     id:revisionId,
                     quotationRevisionStatus:"SENT",
+                    // The link token must match, so a reissued link revokes the old one.
+                    customerAccessTokenHash:hashCustomerAccessToken(body.token),
                     validUntil:{
                         gte: getTodayInIndiaDbDate()
                     }

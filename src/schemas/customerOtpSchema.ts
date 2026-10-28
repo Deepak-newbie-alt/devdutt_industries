@@ -1,8 +1,9 @@
 import z from "zod";
 import { customerPhoneSchema } from "./inquirySchema.js";
+import { customerAccessTokenSchema } from "./quotationSchema.js";
 
 // Inquiry codes go to the phone the customer enters; quotation codes go to the
-// phone already on the inquiry, so the client only names the revision.
+// phone already on the inquiry, so the client only presents its quotation link token.
 export const requestOtpChallengeSchema=z.object({
     body:z.discriminatedUnion("purpose",[
         z.object({
@@ -15,11 +16,7 @@ export const requestOtpChallengeSchema=z.object({
                 "QUOTATION_REJECT",
                 "QUOTATION_REQUEST_REVISION"
             ]),
-            revisionId:z
-            .coerce
-            .number()
-            .int("Id must be an integer")
-            .positive("Id must be positive")
+            token:customerAccessTokenSchema
         })
     ])
 })

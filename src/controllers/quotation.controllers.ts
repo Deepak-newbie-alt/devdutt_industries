@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { TcreateQuotation, TcustomerRevisionResponse, TeditQuotationRevision, TquotationIdParams, TrevisionIdParams, TsendQuotation } from "../schemas/quotationSchema.js";
+import type { TcreateQuotation, TcustomerQuotationLookup, TcustomerRevisionResponse, TeditQuotationRevision, TquotationIdParams, TrevisionIdParams, TsendQuotation } from "../schemas/quotationSchema.js";
 import type { ValidatedRequest } from "../types/ValidatedRequest.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { QuotationService } from "../services/quotation.services.js";
@@ -112,5 +112,23 @@ export const getIssuedDocument=catchAsync<ValidatedRequest<TrevisionIdParams>>(a
         "ETag":`"${document.sha256}"`,
         "Cache-Control":"private, max-age=31536000, immutable"
     }).send(Buffer.from(document.content));
+    return;
+})
+
+export const reissueCustomerLink=catchAsync<ValidatedRequest<TrevisionIdParams>>(async(req,res:Response)=>{
+    const data=await QuotationService.reissueCustomerLink(req.validated.params,req.user!.id);
+
+    res.status(200).json(
+        new ApiResponse(200,"Customer link issued; the previous link no longer works",data)
+    )
+    return;
+})
+
+export const getCustomerQuotation=catchAsync<ValidatedRequest<TcustomerQuotationLookup>>(async(req,res:Response)=>{
+    const data=await QuotationService.getCustomerQuotation(req.validated.body);
+
+    res.status(200).json(
+        new ApiResponse(200,"Quotation fetched successfully",data)
+    )
     return;
 })
