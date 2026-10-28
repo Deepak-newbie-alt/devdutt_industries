@@ -1,45 +1,82 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, Outlet } from "react-router";
+import { StatusMessage } from "../components/ui/StatusMessage";
 import { HistoryLookupForm } from "../features/inquiries/HistoryLookupForm";
+import { INQUIRY_STATUS, LOST_LINK_HINT, quotationSummary } from "../features/inquiries/customerStatus";
+import {
+  EXPIRED_NOTICE,
+  useHistorySession,
+  type HistoryOutletContext,
+  type HistorySession,
+} from "../features/inquiries/historySession";
 import type { CustomerInquiry, CustomerInquiryHistory } from "../types/api";
-import { formatDateOnly, formatDateTime } from "../utils/format";
+import { formatDateTime } from "../utils/format";
 
-// Customer wording for where an enquiry stands.
-const STATUS: Record<CustomerInquiry["status"], { label: string; badge: string }> = {
-  OPEN: { label: "Received", badge: "badge--open" },
-  IN_PROGRESS: { label: "In progress", badge: "badge--in-progress" },
-  CLOSED: { label: "Closed", badge: "badge--closed" },
-};
+// Holds the verified session for /my-inquiries and its detail pages, in memory only.
+export function MyInquiriesLayout() {
+  const [session, setSession] = useState<HistorySession | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-// Same wording as the quotation link page. The link itself isn't stored, so it can't be shown here.
-function quotationSummary(quotation: NonNullable<CustomerInquiry["quotation"]>) {
-  const validUntil = formatDateOnly(quotation.validUntil);
+  const start = useCallback((history: CustomerInquiryHistory, phone: string) => {
+    setNotice(null);
+    setSession({
+      phone,
+      history,
+      accessToken: history.access.token,
+      expiresAt: Date.now() + history.access.expiresInSeconds * 1000,
+    });
+  }, []);
 
-  switch (quotation.status) {
-    case "SENT":
-      return quotation.canRespond
-        ? `Awaiting your response. Valid until ${validUntil}. Use the link our team sent you to respond.`
-        : `Expired on ${validUntil}.`;
-    case "REVISION_REQUESTED":
-      return "You asked for changes. Our team will send you a revised quotation.";
-    case "SUPERSEDED":
-      return "Our team is preparing a revised quotation.";
-    case "ACCEPTED":
-      return "You accepted this quotation.";
-    case "REJECTED":
-      return "You declined this quotation.";
-    case "EXPIRED":
-      return `Expired on ${validUntil}.`;
-  }
+  const end = useCallback((reason: "expired" | "signed-out") => {
+    setSession(null);
+    setNotice(reason === "expired" ? EXPIRED_NOTICE : null);
+  }, []);
+
+  // When access runs out, the enquiries leave the screen too.
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => end("expired"), Math.max(0, session.expiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [session, end]);
+
+  const context: HistoryOutletContext = { session, notice, start, end };
+
+  return (
+    <div className="container page-section narrow">
+      <Outlet context={context} />
+    </div>
+  );
+}
+
+// The phone and code steps, with the reason a previous session ended.
+export function VerifyNumber() {
+  const { notice, start } = useHistorySession();
+
+  return (
+    <>
+      {notice && (
+        <StatusMessage tone="info" title="Please verify again">
+          <p>{notice}</p>
+        </StatusMessage>
+      )}
+      <HistoryLookupForm onFound={start} />
+    </>
+  );
 }
 
 function InquiryCard({ inquiry }: { inquiry: CustomerInquiry }) {
-  const status = STATUS[inquiry.status];
+  const status = INQUIRY_STATUS[inquiry.status];
+  const detailPath = `/my-inquiries/${inquiry.id}`;
 
   return (
     <li className="history-card">
       <div className="history-card__header">
-        <h2 className="history-card__product">{inquiry.product.name}</h2>
+        <h2 className="history-card__product">
+          <Link to={detailPath}>{inquiry.product.name}</Link>
+        </h2>
         <span className={`badge ${status.badge}`}>{status.label}</span>
       </div>
       <p className="history-card__meta muted">
@@ -54,27 +91,24 @@ function InquiryCard({ inquiry }: { inquiry: CustomerInquiry }) {
             {inquiry.quotation.revisionNumber > 1 && ` (revision ${inquiry.quotation.revisionNumber})`}
           </p>
           <p>{quotationSummary(inquiry.quotation)}</p>
-          {inquiry.quotation.canRespond && (
-            <p className="muted">Can't find the link? Contact us using the details below and we'll send it again.</p>
-          )}
+          {inquiry.quotation.canRespond && <p className="muted">{LOST_LINK_HINT}</p>}
         </div>
       ) : (
         inquiry.status !== "CLOSED" && <p className="muted">No quotation yet. Our team will send one to you.</p>
       )}
+
+      <p className="history-card__more">
+        <Link to={detailPath}>
+          View details<span className="visually-hidden"> of enquiry #{inquiry.id}</span>
+        </Link>
+      </p>
     </li>
   );
 }
 
-function HistoryResults({
-  history,
-  phone,
-  onStartOver,
-}: {
-  history: CustomerInquiryHistory;
-  phone: string;
-  onStartOver: () => void;
-}) {
+function HistoryResults({ session, onStartOver }: { session: HistorySession; onStartOver: () => void }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const { history, phone } = session;
 
   // Move focus so screen-reader and keyboard users land on the results.
   useEffect(() => {
@@ -127,23 +161,22 @@ function HistoryResults({
 }
 
 export function MyInquiriesPage() {
-  // Kept in memory only: leaving the page or starting over clears it.
-  const [found, setFound] = useState<{ history: CustomerInquiryHistory; phone: string } | null>(null);
+  const { session, end } = useHistorySession();
 
   return (
-    <div className="container page-section narrow">
+    <>
       <title>My enquiries | Devdutt Industries</title>
-      {found ? (
-        <HistoryResults history={found.history} phone={found.phone} onStartOver={() => setFound(null)} />
+      {session ? (
+        <HistoryResults session={session} onStartOver={() => end("signed-out")} />
       ) : (
         <>
           <header className="page-header">
             <h1>My enquiries</h1>
             <p className="muted">See the enquiries you've sent us and where they stand. No account needed.</p>
           </header>
-          <HistoryLookupForm onFound={(history, phone) => setFound({ history, phone })} />
+          <VerifyNumber />
         </>
       )}
-    </div>
+    </>
   );
 }

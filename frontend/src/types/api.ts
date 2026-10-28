@@ -148,6 +148,35 @@ export type CustomerInquiryHistory = {
   // Newest first, at most 50; totalInquiries counts them all.
   inquiries: CustomerInquiry[];
   totalInquiries: number;
+  // Read-only access to this phone's details and issued PDFs. Kept in memory only.
+  access: { token: string; expiresInSeconds: number };
+};
+
+// POST /inquiries/customer/history/:inquiryId. Only customer-facing events, no notes or staff.
+export type CustomerTimelineEvent =
+  | { type: "RECEIVED" | "IN_PROGRESS" | "CLOSED"; at: string }
+  | { type: "QUOTATION_ISSUED"; at: string; revisionNumber: number };
+
+export type CustomerQuotationRevision = {
+  revisionNumber: number;
+  status: Exclude<QuotationRevisionStatus, "DRAFT">;
+  validUntil: string;
+  canRespond: boolean;
+  // The newest version sent; earlier ones were replaced by it.
+  isCurrent: boolean;
+  // The PDF issued when this version was sent, if there is one.
+  document: { fileName: string; sizeBytes: number } | null;
+};
+
+export type CustomerInquiryDetail = {
+  id: number;
+  createdAt: string;
+  requirement: string;
+  status: CustomerInquiry["status"];
+  product: { name: string };
+  timeline: CustomerTimelineEvent[];
+  // Sent versions only, newest first; null until one has been sent.
+  quotation: { quotationNumber: string; revisions: CustomerQuotationRevision[] } | null;
 };
 
 // ---- Employee workspace ----

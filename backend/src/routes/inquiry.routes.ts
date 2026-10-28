@@ -1,6 +1,6 @@
 import express from "express";
-import { claimInquirySchema, closeInquirySchema, closureRequestSchema, createInquirySchema, customerInquiryHistorySchema, getInquiryActivitySchema, getInquiryParams, getInquiryQuerySchema, inquiryActivitySchema } from "../schemas/inquirySchema.js";
-import { addNote, claimInquiry, closeInquiry, contactCustomer, createInquiry, getActivities, getCustomerInquiryHistory, getInquiries, getInquiryById, requestClosure } from "../controllers/inquiry.controllers.js";
+import { claimInquirySchema, closeInquirySchema, closureRequestSchema, createInquirySchema, customerInquiryDetailSchema, customerInquiryHistorySchema, customerQuotationDocumentSchema, getInquiryActivitySchema, getInquiryParams, getInquiryQuerySchema, inquiryActivitySchema } from "../schemas/inquirySchema.js";
+import { addNote, claimInquiry, closeInquiry, contactCustomer, createInquiry, getActivities, getCustomerInquiryDetail, getCustomerInquiryHistory, getCustomerQuotationDocument, getInquiries, getInquiryById, requestClosure } from "../controllers/inquiry.controllers.js";
 import { validator } from "../middlewares/validationMiddleware.js";
 import { auth, isSalesperson } from "../middlewares/authMiddleware.js";
 const router=express.Router();
@@ -8,6 +8,9 @@ const router=express.Router();
 router.post("/",validator(createInquirySchema),createInquiry);
 // Customer-facing: phone and code travel in the body, never the URL.
 router.post("/customer/history",validator(customerInquiryHistorySchema),getCustomerInquiryHistory);
+// Read-only, with the short-lived access token the lookup returned (in the body).
+router.post("/customer/history/:inquiryId",validator(customerInquiryDetailSchema),getCustomerInquiryDetail);
+router.post("/customer/history/:inquiryId/quotation/revisions/:revisionNumber/document",validator(customerQuotationDocumentSchema),getCustomerQuotationDocument);
 router.get("/",auth,validator(getInquiryQuerySchema),getInquiries);
 router.get("/:inquiryId",auth,validator(getInquiryParams),getInquiryById);
 router.patch("/:inquiryId/claim",auth,isSalesperson,validator(claimInquirySchema),claimInquiry);

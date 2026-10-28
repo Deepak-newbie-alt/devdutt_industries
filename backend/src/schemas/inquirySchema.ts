@@ -154,3 +154,31 @@ export const getInquiryActivitySchema=z.object({
 })
 
 export type TgetInquiryActivity=z.infer<typeof getInquiryActivitySchema>;
+
+// Short-lived read token returned by the history lookup; sent in the body, never the URL.
+const historyAccessBody=z.object({
+    accessToken:z
+    .string({error:"Verify your number again"})
+    .max(512,"Verify your number again")
+    .regex(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/,"Verify your number again")
+})
+
+export const customerInquiryDetailSchema=z.object({
+    params:getInquiryParams.shape.params,
+    body:historyAccessBody
+})
+
+export type TcustomerInquiryDetail=z.infer<typeof customerInquiryDetailSchema>;
+
+export const customerQuotationDocumentSchema=z.object({
+    params:getInquiryParams.shape.params.extend({
+        revisionNumber:z
+        .coerce
+        .number()
+        .int("Revision number must be an integer")
+        .positive("Revision number must be positive")
+    }),
+    body:historyAccessBody
+})
+
+export type TcustomerQuotationDocument=z.infer<typeof customerQuotationDocumentSchema>;

@@ -3,7 +3,8 @@ import { PublicLayout } from "./components/layout/PublicLayout";
 import { CatalogPage } from "./pages/CatalogPage";
 import { EnquiryPage } from "./pages/EnquiryPage";
 import { HomePage } from "./pages/HomePage";
-import { MyInquiriesPage } from "./pages/MyInquiriesPage";
+import { MyInquiriesLayout, MyInquiriesPage } from "./pages/MyInquiriesPage";
+import { MyInquiryDetailPage } from "./pages/MyInquiryDetailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { QuotationResponsePage } from "./pages/QuotationResponsePage";
@@ -21,7 +22,15 @@ export const router = createBrowserRouter([
       // Customer link from a salesperson: /quotation#token=...
       { path: "quotation", element: <QuotationResponsePage /> },
       // Customer's own enquiries, after verifying their phone number with a code.
-      { path: "my-inquiries", element: <MyInquiriesPage /> },
+      // The verified session is held by the layout, in memory, for the list and each enquiry.
+      {
+        path: "my-inquiries",
+        element: <MyInquiriesLayout />,
+        children: [
+          { index: true, element: <MyInquiriesPage /> },
+          { path: ":inquiryId", element: <MyInquiryDetailPage /> },
+        ],
+      },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

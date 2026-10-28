@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { catchAsync } from "../utils/catchAsync.js";
 import type { ValidatedRequest } from '../types/ValidatedRequest.js';
 import { InquiryService } from '../services/inquiry.services.js';
-import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TcustomerInquiryHistory, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
+import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TcustomerInquiryDetail, TcustomerInquiryHistory, TcustomerQuotationDocument, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from '../schemas/inquirySchema.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 
@@ -21,6 +21,28 @@ export const getCustomerInquiryHistory=catchAsync<ValidatedRequest<TcustomerInqu
     res.status(200).json(
         new ApiResponse(200,"Inquiries fetched successfully",data)
     )
+    return;
+})
+
+export const getCustomerInquiryDetail=catchAsync<ValidatedRequest<TcustomerInquiryDetail>>(async(req,res:Response)=>{
+    const data=await InquiryService.getCustomerInquiryDetail(req.validated.params,req.validated.body);
+
+    res.status(200).json(
+        new ApiResponse(200,"Inquiry fetched successfully",data)
+    )
+    return;
+})
+
+export const getCustomerQuotationDocument=catchAsync<ValidatedRequest<TcustomerQuotationDocument>>(async(req,res:Response)=>{
+    const document=await InquiryService.getCustomerQuotationDocument(req.validated.params,req.validated.body);
+
+    // Customer copies aren't cached: access ends when the read token expires.
+    res.status(200).set({
+        "Content-Type":"application/pdf",
+        "Content-Disposition":`inline; filename="${document.fileName}"`,
+        "Content-Length":String(document.sizeBytes),
+        "Cache-Control":"no-store"
+    }).send(Buffer.from(document.content));
     return;
 })
 

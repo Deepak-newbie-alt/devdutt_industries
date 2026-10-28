@@ -125,10 +125,19 @@ export async function apiFileRequest(path: string, options: RequestOptions = {})
     headers.set("Authorization", `Bearer ${options.token}`);
   }
 
+  if (options.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+  }
+
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, { method: options.method ?? "GET", headers, signal: options.signal });
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: options.signal,
+    });
   } catch (error) {
     if (options.signal?.aborted) {
       throw error;

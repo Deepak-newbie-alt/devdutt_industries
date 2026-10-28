@@ -1,5 +1,5 @@
-import { apiRequest } from "./client";
-import type { CreatedInquiry, CustomerInquiryHistory, OtpChallenge } from "../types/api";
+import { apiFileRequest, apiRequest } from "./client";
+import type { CreatedInquiry, CustomerInquiryDetail, CustomerInquiryHistory, OtpChallenge } from "../types/api";
 
 // Sends a one-time code to the phone number the customer typed.
 export function requestInquiryCode(phoneNumber: string) {
@@ -39,4 +39,21 @@ export type HistoryLookup = {
 // Uses up the code: each look at the history needs a new one.
 export function lookupInquiryHistory(lookup: HistoryLookup) {
   return apiRequest<CustomerInquiryHistory>("/inquiries/customer/history", { method: "POST", body: lookup });
+}
+
+// With the read token from the lookup, sent in the body so it never appears in a URL.
+export function getCustomerInquiry(inquiryId: number, accessToken: string, signal?: AbortSignal) {
+  return apiRequest<CustomerInquiryDetail>(`/inquiries/customer/history/${inquiryId}`, {
+    method: "POST",
+    body: { accessToken },
+    signal,
+  });
+}
+
+// The PDF issued for one sent version of the quotation.
+export function getCustomerQuotationPdf(inquiryId: number, revisionNumber: number, accessToken: string) {
+  return apiFileRequest(`/inquiries/customer/history/${inquiryId}/quotation/revisions/${revisionNumber}/document`, {
+    method: "POST",
+    body: { accessToken },
+  });
 }

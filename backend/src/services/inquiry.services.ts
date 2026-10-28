@@ -1,9 +1,10 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import prisma from "../lib/prisma.js";
 import type { InquiryStatus } from "../generated/prisma/enums.js";
-import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TcustomerInquiryHistory, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
+import type { TclaimInquiry, TcloseInquiry, TclosureRequest, TcreateInquiryInput, TcustomerInquiryDetail, TcustomerInquiryHistory, TcustomerQuotationDocument, TgetInquiryActivity, TgetInquiryParams, TgetInquiryQuery, TinquiryActivity } from "../schemas/inquirySchema.js";
 import ApiError from "../utils/ApiError.js";
 import { getTodayInIndiaDbDate } from "../utils/dateOnly.js";
+import { issueHistoryAccess, verifyHistoryAccess } from "../utils/customerHistoryAccess.js";
 import { CustomerOtpService } from "./customer.otp.services.js";
 
 // The assigned or acting staff member's name, so screens can show names instead of ids.
@@ -181,8 +182,156 @@ export const InquiryService={
                     } : null
                 };
             }),
-            totalInquiries
+            totalInquiries,
+            // Lets the customer open details and issued PDFs for a few minutes without a new code.
+            access:issueHistoryAccess(body.phoneNumber)
         };
+    },
+
+    // One of the verified phone's inquiries, with a customer-safe timeline and the
+    // quotation versions sent to them. Another phone's inquiry is "not found".
+    getCustomerInquiryDetail:async(params:TcustomerInquiryDetail["params"],body:TcustomerInquiryDetail["body"])=>{
+        const phoneNumber=verifyHistoryAccess(body.accessToken);
+
+        const inquiry=await prisma.inquiry.findFirst({
+            where:{
+                id:params.inquiryId,
+                phoneNumber
+            },
+            select:{
+                id:true,
+                createdAt:true,
+                requirement:true,
+                status:true,
+                product:{
+                    select:{
+                        name:true
+                    }
+                },
+                // Only the events a customer should see; notes, contacts and closure requests stay internal.
+                inquiryActivity:{
+                    where:{
+                        activityType:{in:["CREATED","CLAIMED","STATUS_CHANGED","CLOSURE_APPROVED"]}
+                    },
+                    orderBy:[{createdAt:"asc"},{id:"asc"}],
+                    select:{
+                        activityType:true,
+                        createdAt:true
+                    }
+                },
+                quotation:{
+                    select:{
+                        quotationNumber:true,
+                        // Drafts are internal; the customer only sees what was sent to them.
+                        revisions:{
+                            where:{
+                                quotationRevisionStatus:{not:"DRAFT"}
+                            },
+                            orderBy:{revisionNumber:"desc"},
+                            select:{
+                                revisionNumber:true,
+                                quotationRevisionStatus:true,
+                                validUntil:true,
+                                document:{
+                                    select:{
+                                        fileName:true,
+                                        sizeBytes:true,
+                                        createdAt:true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if(!inquiry){
+            throw new ApiError(404,"Inquiry not found");
+        }
+
+        const today=getTodayInIndiaDbDate();
+        const revisions=inquiry.quotation?.revisions ?? [];
+
+        // Inquiry closures are always STATUS_CHANGED (manual close, customer accept or reject)
+        // or CLOSURE_APPROVED; their notes and reasons are for staff.
+        const activityEvents=inquiry.inquiryActivity.map((activity)=>({
+            type:activity.activityType==="CREATED" ? "RECEIVED" as const
+                : activity.activityType==="CLAIMED" ? "IN_PROGRESS" as const
+                : "CLOSED" as const,
+            at:activity.createdAt
+        }));
+
+        // A document is written when the revision is sent, so its date is when it was issued.
+        const issuedEvents=revisions.flatMap((revision)=>revision.document ? [{
+            type:"QUOTATION_ISSUED" as const,
+            at:revision.document.createdAt,
+            revisionNumber:revision.revisionNumber
+        }] : []);
+
+        const timeline=[...activityEvents,...issuedEvents]
+            .sort((a,b)=>a.at.getTime()-b.at.getTime());
+
+        return {
+            id:inquiry.id,
+            createdAt:inquiry.createdAt,
+            requirement:inquiry.requirement,
+            status:inquiry.status,
+            product:inquiry.product,
+            timeline,
+            quotation:inquiry.quotation && revisions.length>0 ? {
+                quotationNumber:inquiry.quotation.quotationNumber,
+                revisions:revisions.map((revision,index)=>({
+                    revisionNumber:revision.revisionNumber,
+                    status:revision.quotationRevisionStatus,
+                    validUntil:revision.validUntil,
+                    // Same rule as getCustomerQuotation.
+                    canRespond:
+                        revision.quotationRevisionStatus==="SENT" &&
+                        revision.validUntil>=today,
+                    // Newest sent version; older ones were replaced by it.
+                    isCurrent:index===0,
+                    document:revision.document ? {
+                        fileName:revision.document.fileName,
+                        sizeBytes:revision.document.sizeBytes
+                    } : null
+                }))
+            } : null
+        };
+    },
+
+    // The issued PDF of one sent revision of the verified phone's inquiry. Drafts never qualify.
+    getCustomerQuotationDocument:async(params:TcustomerQuotationDocument["params"],body:TcustomerQuotationDocument["body"])=>{
+        const phoneNumber=verifyHistoryAccess(body.accessToken);
+
+        const revision=await prisma.quotationRevision.findFirst({
+            where:{
+                revisionNumber:params.revisionNumber,
+                quotationRevisionStatus:{not:"DRAFT"},
+                quotation:{
+                    inquiry:{
+                        id:params.inquiryId,
+                        phoneNumber
+                    }
+                }
+            },
+            select:{
+                document:{
+                    select:{
+                        fileName:true,
+                        content:true,
+                        sha256:true,
+                        sizeBytes:true
+                    }
+                }
+            }
+        });
+
+        if(!revision?.document){
+            throw new ApiError(404,"This quotation document isn't available");
+        }
+
+        return revision.document;
     },
 
     getInquiries: async (

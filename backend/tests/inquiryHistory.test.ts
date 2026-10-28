@@ -58,7 +58,7 @@ describe("customer inquiry history", () => {
         assert.ok(!history.inquiries.some((inquiry) => inquiry.id === someoneElse.id));
 
         // Exactly these fields: no salesperson, activities, phone, prices or token hashes.
-        assert.deepEqual(Object.keys(history).sort(), ["inquiries", "totalInquiries"]);
+        assert.deepEqual(Object.keys(history).sort(), ["access", "inquiries", "totalInquiries"]);
         for (const inquiry of history.inquiries) {
             assert.deepEqual(Object.keys(inquiry).sort(), ["createdAt", "id", "product", "quotation", "requirement", "status"]);
             assert.deepEqual(inquiry.product, { name: productName });
@@ -75,7 +75,8 @@ describe("customer inquiry history", () => {
 
     it("returns an empty list for a verified phone with no inquiries", async () => {
         const phone = fixtures.phone();
-        assert.deepEqual(await lookup(phone, await requestCode(phone)), { inquiries: [], totalInquiries: 0 });
+        const { inquiries, totalInquiries } = await lookup(phone, await requestCode(phone));
+        assert.deepEqual({ inquiries, totalInquiries }, { inquiries: [], totalInquiries: 0 });
     });
 
     it("shows only what was sent to the customer, never drafts", async () => {
@@ -170,7 +171,8 @@ describe("customer inquiry history: verification", () => {
         await rejectsWith(lookup(victim, otp), 400);
         assert.equal((await challenge(otp.challengeId)).attempts, 1, "the attempt is counted");
         // Still usable for the phone it was sent to, which has no inquiries.
-        assert.deepEqual(await lookup(mine, otp), { inquiries: [], totalInquiries: 0 });
+        const { inquiries, totalInquiries } = await lookup(mine, otp);
+        assert.deepEqual({ inquiries, totalInquiries }, { inquiries: [], totalInquiries: 0 });
     });
 
     it("doesn't accept codes across purposes", async () => {
