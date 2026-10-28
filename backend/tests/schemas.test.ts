@@ -70,7 +70,6 @@ describe("link fields accept only http and https", () => {
     const rejected = ["javascript:alert(1)", "data:text/html,x", "file:///C:/a", "ftp://example.com/a"];
     const checks: [string, (url: string) => boolean][] = [
         ["product image", (url) => createProductImageSchema.safeParse({ body: { productId: 1, imageUrl: url } }).success],
-        ["product video", (url) => createProductVideoSchema.safeParse({ body: { productId: 1, youtubeUrl: url, title: "Demo" } }).success],
         ["product brochure", (url) => createProductBrochureSchema.safeParse({ body: { productId: 1, fileUrl: url, fileName: "Brochure" } }).success],
         ["company website and logo", (url) => updateCompanySettingsSchema.safeParse({ body: { website: url, logoUrl: url } }).success],
     ];
@@ -84,5 +83,41 @@ describe("link fields accept only http and https", () => {
 
     it("still allows clearing the company website", () => {
         assert.equal(updateCompanySettingsSchema.safeParse({ body: { website: null } }).success, true);
+    });
+});
+
+describe("product videos accept only YouTube video links", () => {
+    const isValid = (youtubeUrl: string) =>
+        createProductVideoSchema.safeParse({ body: { productId: 1, youtubeUrl, title: "Demo" } }).success;
+
+    it("accepts the usual YouTube link forms", () => {
+        for (const url of [
+            "https://www.youtube.com/watch?v=iIlTBwKxtAc",
+            "https://youtube.com/watch?v=iIlTBwKxtAc&t=10s",
+            "https://m.youtube.com/watch?v=iIlTBwKxtAc",
+            "https://youtu.be/iIlTBwKxtAc",
+            "https://youtu.be/iIlTBwKxtAc?si=abc",
+            "https://www.youtube.com/shorts/iIlTBwKxtAc",
+            "https://www.youtube.com/embed/iIlTBwKxtAc",
+            "https://www.youtube.com/live/iIlTBwKxtAc"
+        ]) {
+            assert.equal(isValid(url), true, url);
+        }
+    });
+
+    it("refuses other sites, channels, playlists and malformed ids", () => {
+        for (const url of [
+            "https://vimeo.com/123456",
+            "https://example.com/watch?v=iIlTBwKxtAc",
+            "https://www.youtube.com.evil.test/watch?v=iIlTBwKxtAc",
+            "https://www.youtube.com/@devduttindustries",
+            "https://www.youtube.com/playlist?list=PL123",
+            "https://www.youtube.com/watch?v=short",
+            "https://youtu.be/",
+            "javascript:alert(1)",
+            "http://localhost:8000/video.mp4"
+        ]) {
+            assert.equal(isValid(url), false, url);
+        }
     });
 });

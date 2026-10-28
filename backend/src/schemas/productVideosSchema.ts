@@ -1,4 +1,5 @@
 import z from "zod";
+import { youtubeVideoId } from "../utils/youtube.js";
 
 export const createProductVideoSchema=z.object({
     body:z.object({
@@ -11,7 +12,9 @@ export const createProductVideoSchema=z.object({
         .string()
         .trim()
         .min(1,"Url is required")
-        .url({ protocol: /^https?$/, message: "Please provide a valid http:// or https:// url" }),
+        .url({ protocol: /^https?$/, message: "Please provide a valid http:// or https:// url" })
+        // Shown in YouTube's embedded player, so it must point at one YouTube video.
+        .refine((url)=>youtubeVideoId(url)!==null,"Use a link to a YouTube video, e.g. https://www.youtube.com/watch?v=…"),
         title:z
         .string()
         .trim()

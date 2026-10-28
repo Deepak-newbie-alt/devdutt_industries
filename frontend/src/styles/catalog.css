@@ -428,3 +428,52 @@
 .resource-list li {
   margin-bottom: var(--space-2);
 }
+
+/* Product videos: YouTube's embedded player, 16:9, one column on phones, two on wide screens. */
+.video-list {
+  display: grid;
+  gap: var(--space-5);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 60rem) {
+  .video-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.video {
+  margin: 0;
+}
+
+.video__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius);
+  /* Shown until the player loads, or if it can't. */
+  background: var(--color-surface-muted);
+}
+
+.video__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video__caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.video__title {
+  font-weight: 700;
+}

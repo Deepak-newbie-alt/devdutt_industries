@@ -4,6 +4,7 @@ import { LoadError } from "../components/ui/LoadError";
 import { LoadingState } from "../components/ui/LoadingState";
 import { MachineNotFound } from "../features/catalog/MachineNotFound";
 import { ProductGallery } from "../features/catalog/ProductGallery";
+import { ProductVideos } from "../features/catalog/ProductVideos";
 import { SpecificationsTable } from "../features/catalog/SpecificationsTable";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { formatPrice, formatUnit } from "../utils/format";
@@ -90,23 +91,16 @@ export function ProductDetailPage() {
       {(machine.videos.length > 0 || machine.brochure) && (
         <section className="detail-section" aria-labelledby="resources-heading">
           <h2 id="resources-heading">Videos and brochure</h2>
-          <ul className="resource-list">
-            {machine.brochure && (
+          {machine.brochure && (
+            <ul className="resource-list">
               <li>
                 <a href={machine.brochure.fileUrl} target="_blank" rel="noopener noreferrer">
                   Download brochure ({machine.brochure.fileName})
                 </a>
               </li>
-            )}
-            {machine.videos.map((video) => (
-              <li key={video.id}>
-                <a href={video.youtubeUrl} target="_blank" rel="noopener noreferrer">
-                  Watch: {video.title}
-                </a>{" "}
-                <span className="muted">(opens YouTube)</span>
-              </li>
-            ))}
-          </ul>
+            </ul>
+          )}
+          {machine.videos.length > 0 && <ProductVideos videos={machine.videos} />}
         </section>
       )}
     </div>

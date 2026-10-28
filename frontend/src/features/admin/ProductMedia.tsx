@@ -14,6 +14,7 @@ import { StatusMessage } from "../../components/ui/StatusMessage";
 import type { AdminProduct } from "../../types/api";
 import { ConfirmBar } from "./ConfirmBar";
 import { isWebUrl } from "./productFormState";
+import { YOUTUBE_LINK_MESSAGE, youtubeVideoId } from "../../utils/youtube";
 
 const LIMITS = { videoTitle: 200, fileName: 255 } as const;
 const URL_MESSAGE = "Enter a full web address starting with http:// or https://";
@@ -250,7 +251,8 @@ function AddVideoForm({
   async function submit(event: FormEvent) {
     event.preventDefault();
     const found = {
-      url: isWebUrl(url) ? undefined : URL_MESSAGE,
+      // Videos play in YouTube's embedded player, so only YouTube video links work.
+      url: youtubeVideoId(url.trim()) ? undefined : YOUTUBE_LINK_MESSAGE,
       title: title.trim() ? undefined : "Enter a title.",
       order: orderError(orderValue),
     };
