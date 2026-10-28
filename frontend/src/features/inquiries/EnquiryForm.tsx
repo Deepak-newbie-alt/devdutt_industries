@@ -12,6 +12,7 @@ const INDIAN_MOBILE = /^[6-9]\d{9}$/;
 const MAX_CODE_ATTEMPTS = 5;
 
 // Accepts "98765 43210", "+91 98765 43210", "09876543210" and keeps the 10-digit number.
+// Any other length keeps every digit so validation reports it instead of a different number being used.
 function normalisePhone(input: string) {
   const digits = input.replace(/\D/g, "");
 
@@ -23,7 +24,7 @@ function normalisePhone(input: string) {
     return digits.slice(1);
   }
 
-  return digits.slice(0, 10);
+  return digits;
 }
 
 type EnquiryFormProps = {
