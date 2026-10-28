@@ -261,10 +261,8 @@ export const CustomerOtpService = {
         };
 
         try {
-            await smsSender.send(
-                `+91${phoneNumber}`,
-                `${code} is your Devdutt Industries verification code. It expires in 5 minutes.`
-            );
+            // 10-digit number as stored; the sender adds the country code.
+            await smsSender.sendOtp(phoneNumber, code);
         } catch (error) {
             console.error("OTP SMS delivery failed:", error);
 
