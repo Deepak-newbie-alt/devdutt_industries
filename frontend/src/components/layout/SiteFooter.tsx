@@ -2,16 +2,21 @@ import { Link } from "react-router";
 import { useCompanyInfo } from "../../context/CompanyInfoContext";
 import { Spinner } from "../ui/Spinner";
 
+// Address and contact details from the public company settings; email and website only when set.
 function CompanyContact() {
   const company = useCompanyInfo();
 
   if (company.status === "loading") {
-    return <Spinner label="Loading contact details" />;
+    return (
+      <div className="site-footer__wide">
+        <Spinner label="Loading contact details" />
+      </div>
+    );
   }
 
   if (company.status === "error") {
     return (
-      <p className="site-footer__muted">
+      <p className="site-footer__muted site-footer__wide">
         Contact details are unavailable right now.{" "}
         <button type="button" className="link-button" onClick={company.reload}>
           Try again
@@ -30,55 +35,87 @@ function CompanyContact() {
 
   return (
     <>
-      <p className="site-footer__company">{info.companyName}</p>
-      <address className="site-footer__address">
-        {addressLines.map((line) => (
-          <span key={line}>{line}</span>
-        ))}
-      </address>
-      <ul className="site-footer__contact">
-        <li>
-          Phone: <a href={`tel:${info.phone.replace(/\s+/g, "")}`}>{info.phone}</a>
-        </li>
-        {info.email && (
+      <section aria-labelledby="footer-visit-heading">
+        <h3 id="footer-visit-heading" className="site-footer__heading">
+          Visit
+        </h3>
+        <address className="site-footer__address">
+          <span>{info.companyName}</span>
+          {addressLines.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </address>
+      </section>
+
+      <section aria-labelledby="footer-reach-heading">
+        <h3 id="footer-reach-heading" className="site-footer__heading">
+          Talk to sales
+        </h3>
+        <ul className="site-footer__contact">
           <li>
-            Email: <a href={`mailto:${info.email}`}>{info.email}</a>
+            <span className="site-footer__label">Phone</span>
+            <a href={`tel:${info.phone.replace(/\s+/g, "")}`}>{info.phone}</a>
           </li>
-        )}
-        {info.website && (
-          <li>
-            Website:{" "}
-            <a href={info.website} rel="noopener noreferrer">
-              {info.website.replace(/^https?:\/\//, "")}
-            </a>
-          </li>
-        )}
-      </ul>
+          {info.email && (
+            <li>
+              <span className="site-footer__label">Email</span>
+              <a href={`mailto:${info.email}`}>{info.email}</a>
+            </li>
+          )}
+          {info.website && (
+            <li>
+              <span className="site-footer__label">Website</span>
+              <a href={info.website} rel="noopener noreferrer">
+                {info.website.replace(/^https?:\/\//, "")}
+              </a>
+            </li>
+          )}
+        </ul>
+      </section>
     </>
   );
+}
+
+function FooterLinks() {
+  return (
+    <nav aria-labelledby="footer-links-heading">
+      <h3 id="footer-links-heading" className="site-footer__heading">
+        Explore
+      </h3>
+      <ul className="site-footer__links">
+        <li>
+          <Link to="/machines">All machines</Link>
+        </li>
+        <li>
+          <Link to="/my-inquiries">My enquiries</Link>
+        </li>
+      </ul>
+    </nav>
+  );
+}
+
+function CompanyName() {
+  const company = useCompanyInfo();
+  return <>{company.status === "success" ? company.data.companyName : "Devdutt Industries"}</>;
 }
 
 export function SiteFooter() {
   return (
     <footer className="site-footer" id="contact">
       <div className="container site-footer__inner">
-        <section aria-labelledby="footer-contact-heading">
-          <h2 id="footer-contact-heading" className="site-footer__heading">
-            Contact
-          </h2>
+        <h2 className="site-footer__name">
+          <CompanyName />
+        </h2>
+        <div className="site-footer__columns">
           <CompanyContact />
-        </section>
-
-        <section aria-labelledby="footer-links-heading">
-          <h2 id="footer-links-heading" className="site-footer__heading">
-            Explore
-          </h2>
-          <ul className="site-footer__links">
-            <li>
-              <Link to="/machines">All machines</Link>
-            </li>
-          </ul>
-        </section>
+          <FooterLinks />
+        </div>
+        <div className="site-footer__bottom">
+          <p>
+            © {new Date().getFullYear()} <CompanyName />
+          </p>
+          <p>Prices are per unit; taxes and final terms are confirmed in your quotation.</p>
+        </div>
       </div>
     </footer>
   );

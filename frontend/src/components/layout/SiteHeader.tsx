@@ -1,8 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
+import { useCompanyInfo } from "../../context/CompanyInfoContext";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "site-nav__link site-nav__link--active" : "site-nav__link";
+
+// The sales phone number from the public company settings; nothing is shown until it loads.
+function HeaderPhone() {
+  const company = useCompanyInfo();
+
+  if (company.status !== "success" || !company.data.phone) {
+    return null;
+  }
+
+  const phone = company.data.phone;
+
+  return (
+    <li className="site-nav__phone-item">
+      <a href={`tel:${phone.replace(/\s+/g, "")}`} className="site-nav__phone">
+        <span className="site-nav__phone-label">Call sales</span>
+        <span className="site-nav__phone-number">{phone}</span>
+      </a>
+    </li>
+  );
+}
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -53,6 +74,7 @@ export function SiteHeader() {
                 Contact
               </a>
             </li>
+            <HeaderPhone />
           </ul>
         </nav>
       </div>

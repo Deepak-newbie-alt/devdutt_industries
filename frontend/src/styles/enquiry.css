@@ -8,7 +8,8 @@
 
 @media (min-width: 60rem) {
   .enquiry {
-    grid-template-columns: minmax(0, 1fr) 20rem;
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: var(--space-7);
   }
 }
 
@@ -19,18 +20,26 @@
   }
 }
 
+/* Forms customers fill in (enquiry, phone lookup): a white sheet with a navy top edge. */
 .enquiry-form {
   padding: var(--space-5);
-  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-navy);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .enquiry-form {
+    padding: var(--space-6) var(--space-7);
+  }
 }
 
 .enquiry-machine {
   overflow: hidden;
-  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
 }
 
 @media (min-width: 60rem) {
@@ -41,24 +50,34 @@
 }
 
 .enquiry-machine__body {
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 
 .enquiry-machine__category {
   margin-bottom: var(--space-1);
-  color: var(--color-text-muted);
+  color: var(--color-accent-text);
   font-size: var(--text-sm);
+  font-weight: 650;
 }
 
 .enquiry-machine__name {
   margin-bottom: var(--space-2);
   color: var(--color-navy);
-  font-weight: 700;
+  font-size: var(--text-xl);
+  font-stretch: var(--stretch-display);
+  font-weight: 760;
+  line-height: 1.2;
 }
 
 .enquiry-machine__price {
-  font-weight: 700;
+  font-size: var(--text-lg);
+  font-weight: 760;
   font-variant-numeric: tabular-nums;
+}
+
+.enquiry-machine__price .muted {
+  font-size: var(--text-sm);
+  font-weight: 400;
 }
 
 .phone-input {
@@ -74,18 +93,21 @@
   border-right: 0;
   border-radius: var(--radius) 0 0 var(--radius);
   background: var(--color-surface-muted);
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .phone-input .input {
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
+/* The code step appears below the phone number, as an inset on warm paper. */
 .otp-step {
   margin-top: var(--space-5);
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-border);
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
 }
 
 .otp-step > .status {
@@ -93,10 +115,12 @@
 }
 
 .otp-input {
-  max-width: 12rem;
-  font-size: var(--text-xl);
+  max-width: 13rem;
+  min-height: 3.5rem;
+  font-size: var(--text-2xl);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.35em;
 }
 
 .resend {
@@ -112,14 +136,20 @@
 .enquiry-sent {
   max-width: var(--narrow-width);
   padding: var(--space-6);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-success);
+  border-top: 3px solid var(--color-success);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .enquiry-sent {
+    padding: var(--space-7);
+  }
 }
 
 .enquiry-sent h1 {
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
 }
 
 .enquiry-sent h1:focus {
@@ -127,7 +157,12 @@
 }
 
 .enquiry-sent__reference {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
   font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
 }
 
 /* My enquiries: the customer's own enquiries after verifying their number. */
@@ -145,10 +180,25 @@
 }
 
 .history-card {
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--color-border);
+  padding: var(--space-5);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .history-card {
+    padding: var(--space-5) var(--space-6);
+  }
+}
+
+/* In the list, the card lifts slightly on hover to show it leads somewhere. */
+.history-list .history-card {
+  transition: box-shadow 200ms ease;
+}
+
+.history-list .history-card:hover {
+  box-shadow: 0 0 0 1px var(--color-border), var(--shadow-raised);
 }
 
 .history-card__header {
@@ -161,7 +211,9 @@
 
 .history-card__product {
   margin: 0;
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
+  font-stretch: var(--stretch-display);
+  font-weight: 760;
 }
 
 .history-card__meta {
@@ -176,9 +228,10 @@
 }
 
 .history-card__quotation {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-muted);
 }
 
 .history-card__quotation p {
@@ -187,10 +240,13 @@
 
 .history-empty {
   margin-bottom: var(--space-5);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
+  padding: var(--space-6);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-muted);
+}
+
+.history-empty > :last-child {
+  margin-bottom: 0;
 }
 
 .history-actions {
@@ -208,19 +264,31 @@
 }
 
 .history-card__more {
-  margin: var(--space-3) 0 0;
+  margin: var(--space-4) 0 0;
   font-weight: 700;
+}
+
+.history-card__more a {
+  text-decoration: none;
+}
+
+.history-card__more a::after {
+  content: " \2192";
+}
+
+.history-card__more a:hover {
+  text-decoration: underline;
 }
 
 /* My enquiries: one enquiry's details. */
 
 .detail-block {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .detail-block__heading {
-  margin-bottom: var(--space-3);
-  font-size: var(--text-lg);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-xl);
 }
 
 .revision-list {
@@ -233,12 +301,13 @@
 
 .revision-item {
   padding: var(--space-4);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  background: var(--color-bg);
 }
 
 .revision-item--current {
-  border-left: 4px solid var(--color-accent);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-muted);
 }
 
 .revision-item > p {
@@ -255,7 +324,8 @@
 
 .revision-item__title {
   margin: 0;
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
 }
 
 .revision-item__tag {
@@ -273,9 +343,10 @@
 /* Help for a quotation step that can't be done online (missing PDF, lost link). */
 .quotation-support {
   margin-top: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
   border-radius: var(--radius);
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
 }
 
 .quotation-support p {

@@ -15,9 +15,15 @@ export function ProductCard({ product }: { product: Product }) {
             {product.name}
           </Link>
         </h3>
-        <p className="product-card__price">
-          {formatPrice(product.price)} <span className="product-card__unit">per {formatUnit(product.unit)}</span>
-        </p>
+        <div className="product-card__footer">
+          <p className="product-card__price">
+            {formatPrice(product.price)} <span className="product-card__unit">per {formatUnit(product.unit)}</span>
+          </p>
+          {/* Visual cue only; the card's link already says where it goes. */}
+          <span className="product-card__more arrow-link" aria-hidden="true">
+            Details
+          </span>
+        </div>
       </div>
     </article>
   );

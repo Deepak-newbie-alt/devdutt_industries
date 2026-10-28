@@ -17,6 +17,8 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -26,10 +28,22 @@ h4 {
   margin: 0 0 var(--space-3);
   line-height: var(--leading-tight);
   color: var(--color-navy);
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+/* Page and section titles: the narrower width, heavier, tightly tracked. */
+h1,
+h2 {
+  font-stretch: var(--stretch-display);
+  font-weight: 760;
+  letter-spacing: -0.015em;
 }
 
 h1 {
   font-size: var(--text-3xl);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
 }
 
 h2 {
@@ -46,7 +60,8 @@ p {
 
 a {
   color: var(--color-accent-text);
-  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 a:hover {
@@ -90,9 +105,21 @@ main:focus {
   border-radius: var(--radius);
   font: inherit;
   font-weight: 700;
+  line-height: 1.25;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms var(--ease);
+}
+
+.button:active:not(:disabled, [aria-disabled="true"]) {
+  transform: translateY(1px);
+}
+
+/* The page's main action (hero, product summary). */
+.button--large {
+  min-height: 3.25rem;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-lg);
 }
 
 .button--primary {
@@ -124,7 +151,39 @@ main:focus {
 
 .button--secondary:hover {
   border-color: var(--color-navy);
+  background: var(--color-surface);
   color: var(--color-navy);
+}
+
+/* Secondary action on a navy field. */
+.button--inverse {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--color-text-inverse);
+}
+
+.button--inverse:hover {
+  border-color: var(--color-text-inverse);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-inverse);
+}
+
+/* A trailing arrow that moves a little on hover. */
+.arrow-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.arrow-link::after {
+  content: "→";
+  transition: transform 160ms var(--ease);
+}
+
+.arrow-link:hover::after {
+  transform: translateX(3px);
 }
 
 .button:disabled,
@@ -154,8 +213,7 @@ main:focus {
 
 .status {
   padding: var(--space-3) var(--space-4);
-  border: 1px solid;
-  border-left-width: 4px;
+  border-left: 3px solid;
   border-radius: var(--radius);
 }
 
@@ -221,13 +279,12 @@ main:focus {
   border: 0;
 }
 
+/* A short context line above a title (the machine's category, "Your quotation"). Sentence case. */
 .eyebrow {
   margin-bottom: var(--space-2);
   color: var(--color-accent-text);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-base);
+  font-weight: 650;
 }
 
 .muted {
@@ -239,8 +296,7 @@ main:focus {
 .field__label {
   display: block;
   margin-bottom: var(--space-1);
-  font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 650;
 }
 
 .input {
@@ -252,10 +308,17 @@ main:focus {
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .input:hover {
   border-color: var(--color-navy);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--color-navy);
+  box-shadow: 0 0 0 3px rgba(232, 137, 36, 0.45);
 }
 
 .input[aria-invalid="true"] {
@@ -277,9 +340,10 @@ main:focus {
 }
 
 .field__hint {
+  max-width: 40rem;
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
-  font-size: var(--text-sm);
+  font-size: 0.9375rem;
 }
 
 .field__counter {
@@ -325,18 +389,18 @@ main:focus {
 }
 
 .empty-state {
-  padding: var(--space-6);
-  border: 1px dashed var(--color-border-strong);
+  padding: var(--space-7) var(--space-6);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-muted);
   text-align: center;
 }
 
 .empty-state__title {
   margin-bottom: var(--space-2);
   color: var(--color-navy);
-  font-size: var(--text-lg);
-  font-weight: 700;
+  font-size: var(--text-xl);
+  font-stretch: var(--stretch-display);
+  font-weight: 760;
 }
 
 .empty-state > :last-child {

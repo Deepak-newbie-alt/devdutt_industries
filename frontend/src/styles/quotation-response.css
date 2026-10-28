@@ -4,11 +4,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Key facts of the quotation, as a row of labelled figures on a white strip. */
 .quotation-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3) var(--space-6);
+  gap: var(--space-4) var(--space-7);
   margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-top: 3px solid var(--color-navy);
+  border-radius: var(--radius);
+  background: var(--color-surface);
 }
 
 .quotation-facts dt {
@@ -18,16 +23,25 @@
 
 .quotation-facts dd {
   margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 700;
+  color: var(--color-navy);
+  font-size: var(--text-xl);
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
 }
 
 .quotation-response {
   margin-top: var(--space-6);
   padding: var(--space-5);
-  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-accent);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .quotation-response {
+    padding: var(--space-6) var(--space-7);
+  }
 }
 
 .quotation-response h2 {

@@ -37,12 +37,12 @@ function TileGroup({ id, title, note, tiles }: { id: string; title: string; note
           <li key={tile.label} className="stat">
             {tile.to ? (
               <Link to={tile.to} className="stat__link">
-                <span className="stat__count">{tile.count.toLocaleString("en-IN")}</span>
+                <span className={tile.count === 0 ? "stat__count stat__count--zero" : "stat__count"}>{tile.count.toLocaleString("en-IN")}</span>
                 <span className="stat__label">{tile.label}</span>
               </Link>
             ) : (
               <div className="stat__box">
-                <span className="stat__count">{tile.count.toLocaleString("en-IN")}</span>
+                <span className={tile.count === 0 ? "stat__count stat__count--zero" : "stat__count"}>{tile.count.toLocaleString("en-IN")}</span>
                 <span className="stat__label">{tile.label}</span>
               </div>
             )}

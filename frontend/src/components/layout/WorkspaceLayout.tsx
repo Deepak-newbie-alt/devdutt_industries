@@ -35,7 +35,7 @@ function WorkspaceHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Workspace">
+        <nav aria-label="Workspace" className="workspace-header__nav">
           <ul className="workspace-nav">
             {(employee.role === "ADMIN" ? ADMIN_LINKS : SALESPERSON_LINKS).map(([to, label]) => (
               <li key={to}>
