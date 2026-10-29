@@ -546,7 +546,7 @@ select.input {
   color: var(--color-text-muted);
 }
 
-/* An empty list: a framed panel with a small red-ringed mark above the message. */
+/* An empty list: a framed panel with a small "nothing here" mark above the message. */
 .empty-state {
   padding: var(--space-8) var(--space-6);
   border: 1px dashed var(--color-border-strong);
@@ -561,9 +561,11 @@ select.input {
   width: 2.75rem;
   height: 2.75rem;
   margin: 0 auto var(--space-4);
-  border: 3px solid var(--color-brand-tint);
-  border-top-color: var(--color-brand);
+  /* A tinted disc with a short red dash. Not a ring, so it can't be mistaken for the loading spinner. */
   border-radius: 50%;
+  background:
+    linear-gradient(var(--color-brand), var(--color-brand)) center / 1rem 3px no-repeat,
+    var(--color-brand-tint);
 }
 
 .empty-state__title {
