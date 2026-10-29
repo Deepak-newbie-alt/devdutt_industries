@@ -89,7 +89,7 @@
   white-space: nowrap;
 }
 
-/* Pipe bending illustrations: a charcoal band, the text on the left, two 16:9 images on the right. */
+/* Inside a pipe bending machine: a charcoal band, the text on the left, two 16:9 images on the right. */
 .showcase {
   background: var(--gradient-ink);
   color: var(--color-text-inverse-muted);
@@ -162,12 +162,6 @@
 
 .showcase__figure img[hidden] {
   display: none;
-}
-
-.showcase__note {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-size: var(--text-xs);
 }
 
 /* Videos of the newest machines (only when some exist). */

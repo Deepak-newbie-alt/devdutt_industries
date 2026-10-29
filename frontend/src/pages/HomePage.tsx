@@ -5,6 +5,7 @@ import { LoadError } from "../components/ui/LoadError";
 import { LoadingState } from "../components/ui/LoadingState";
 import { ProductCard } from "../features/catalog/ProductCard";
 import { ProductVideos } from "../features/catalog/ProductVideos";
+import { HeroAnimation } from "../features/home/HeroAnimation";
 import { useApiQuery } from "../hooks/useApiQuery";
 import type { Product } from "../types/api";
 
@@ -105,8 +106,8 @@ function MachinesAtWork({ products }: { products: Product[] }) {
   );
 }
 
-// Brand visuals from an AI-generated video of a pipe bending machine (files in public/showcase).
-// They illustrate the machine type, not a catalog product, so they are captioned as illustrations.
+// Brand visuals of a pipe bending machine (files in public/showcase). They show the machine type,
+// not a catalog product, so they sit here rather than in a product gallery.
 const SHOWCASE_IMAGES = [
   {
     name: "pipe-bender-workshop",
@@ -152,7 +153,6 @@ function MachineShowcase() {
               />
             </figure>
           ))}
-          <p className="showcase__note">AI-generated illustrations</p>
         </div>
       </div>
     </section>
@@ -208,6 +208,8 @@ export function HomePage() {
               </Link>
             </p>
           </div>
+
+          <HeroAnimation />
 
           <section className="hero__panel" aria-labelledby="categories-heading">
             <h2 id="categories-heading" className="hero__panel-title">
