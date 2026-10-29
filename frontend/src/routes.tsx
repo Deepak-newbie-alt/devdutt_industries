@@ -1,4 +1,5 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, type RouteObject } from "react-router";
+import { AppRoot, NEEDS_CLERK } from "./auth/AppRoot";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import { CatalogPage } from "./pages/CatalogPage";
 import { EnquiryPage } from "./pages/EnquiryPage";
@@ -10,7 +11,7 @@ import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { QuotationResponsePage } from "./pages/QuotationResponsePage";
 import { RouteErrorPage } from "./pages/RouteErrorPage";
 
-export const router = createBrowserRouter([
+const routes: RouteObject[] = [
   {
     element: <PublicLayout />,
     errorElement: <RouteErrorPage />,
@@ -36,7 +37,8 @@ export const router = createBrowserRouter([
   },
   {
     // Staff pages load on demand, so public visitors never download Clerk or workspace code.
-    lazy: async () => ({ Component: (await import("./auth/ClerkLayout")).ClerkLayout }),
+    // The handle tells AppRoot to start Clerk for these pages.
+    handle: NEEDS_CLERK,
     errorElement: <RouteErrorPage />,
     children: [
       {
@@ -138,4 +140,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
-]);
+];
+
+// AppRoot loads Clerk once a staff page is opened and keeps it for the rest of the tab.
+export const router = createBrowserRouter([{ element: <AppRoot />, children: routes }]);
