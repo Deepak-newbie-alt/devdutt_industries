@@ -913,6 +913,31 @@ a.data-table__primary:hover {
   }
 }
 
+/* Fields side by side share their rows (label, hint, control, error), so the inputs line up
+   even when only one of them has a hint or an error. */
+.form-grid > .field {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  align-content: start;
+}
+
+.form-grid > .field > .field__label {
+  grid-row: 1;
+}
+
+.form-grid > .field > .field__hint {
+  grid-row: 2;
+}
+
+.form-grid > .field > :not(.field__label, .field__hint, .field__error) {
+  grid-row: 3;
+}
+
+.form-grid > .field > .field__error {
+  grid-row: 4;
+}
+
 .input--date {
   max-width: 14rem;
 }
