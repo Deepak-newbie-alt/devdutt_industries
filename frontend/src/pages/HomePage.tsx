@@ -5,7 +5,7 @@ import { LoadError } from "../components/ui/LoadError";
 import { LoadingState } from "../components/ui/LoadingState";
 import { ProductCard } from "../features/catalog/ProductCard";
 import { ProductVideos } from "../features/catalog/ProductVideos";
-import { HeroAnimation } from "../features/home/HeroAnimation";
+import { HeroVideo } from "../features/home/HeroVideo";
 import { useApiQuery } from "../hooks/useApiQuery";
 import type { Product } from "../types/api";
 
@@ -188,6 +188,7 @@ export function HomePage() {
     <>
       <title>Devdutt Industries | Pipe and tube machinery</title>
       <section className="hero" aria-labelledby="hero-heading">
+        <HeroVideo />
         <div className="container hero__inner">
           <div className="hero__copy">
             <p className="eyebrow hero__tagline">Your imagination our creation</p>
@@ -208,20 +209,21 @@ export function HomePage() {
               </Link>
             </p>
           </div>
-
-          <HeroAnimation />
-
-          <section className="hero__panel" aria-labelledby="categories-heading">
-            <h2 id="categories-heading" className="hero__panel-title">
-              Machine categories
-            </h2>
-            <CategoryIndex />
-            <Link to="/machines" className="arrow-link hero__panel-link">
-              View all machines
-            </Link>
-          </section>
         </div>
       </section>
+
+      {/* The category index on a white panel, raised over the bottom edge of the hero. */}
+      <div className="container hero-categories">
+        <section className="hero__panel" aria-labelledby="categories-heading">
+          <h2 id="categories-heading" className="hero__panel-title">
+            Machine categories
+          </h2>
+          <CategoryIndex />
+          <Link to="/machines" className="arrow-link hero__panel-link">
+            View all machines
+          </Link>
+        </section>
+      </div>
 
       <section className="container page-section" aria-labelledby="recent-heading">
         <div className="section-heading">
