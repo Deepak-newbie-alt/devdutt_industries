@@ -89,6 +89,87 @@
   white-space: nowrap;
 }
 
+/* Pipe bending illustrations: a charcoal band, the text on the left, two 16:9 images on the right. */
+.showcase {
+  background: var(--gradient-ink);
+  color: var(--color-text-inverse-muted);
+}
+
+.showcase__inner {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 60rem) {
+  .showcase__inner {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: var(--space-7);
+    align-items: center;
+  }
+}
+
+.showcase__eyebrow {
+  color: var(--color-brand-on-dark);
+}
+
+.showcase__intro h2 {
+  color: var(--color-text-inverse);
+  font-size: var(--text-3xl);
+}
+
+.showcase__intro p:not(.eyebrow) {
+  max-width: 24rem;
+  font-size: var(--text-lg);
+}
+
+.showcase__link,
+.showcase__link:hover {
+  margin-top: var(--space-3);
+  color: var(--color-text-inverse);
+}
+
+.showcase :focus-visible {
+  outline-color: var(--color-text-inverse);
+}
+
+.showcase__grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 40rem) {
+  .showcase__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The box keeps its 16:9 shape on the dark panel even if an image fails to load. */
+.showcase__figure {
+  margin: 0;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  background: var(--color-ink-raised);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.showcase__figure img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.showcase__figure img[hidden] {
+  display: none;
+}
+
+.showcase__note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
 /* Videos of the newest machines (only when some exist). */
 .home-videos {
   background: var(--color-surface-muted);

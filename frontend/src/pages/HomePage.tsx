@@ -105,6 +105,60 @@ function MachinesAtWork({ products }: { products: Product[] }) {
   );
 }
 
+// Brand visuals from an AI-generated video of a pipe bending machine (files in public/showcase).
+// They illustrate the machine type, not a catalog product, so they are captioned as illustrations.
+const SHOWCASE_IMAGES = [
+  {
+    name: "pipe-bender-workshop",
+    alt: "Illustration of a pipe bending machine bending a steel pipe on a workshop floor",
+  },
+  {
+    name: "pipe-bender-exploded",
+    alt: "Illustration of a pipe bending machine taken apart: bending head and die, gearbox, hydraulic cylinder, drive motor, electrical cabinets and control stand",
+  },
+] as const;
+
+function MachineShowcase() {
+  return (
+    <section className="showcase" aria-labelledby="showcase-heading">
+      <div className="container page-section showcase__inner">
+        <div className="showcase__intro">
+          <p className="eyebrow showcase__eyebrow">Pipe bending</p>
+          <h2 id="showcase-heading">Inside a pipe bending machine</h2>
+          <p>
+            The bending head and die, gearbox, hydraulic cylinder, drive motor and controls, shown apart and at work on
+            the shop floor.
+          </p>
+          <Link to="/machines?q=pipe%20bending" className="arrow-link showcase__link">
+            Browse pipe bending machines
+          </Link>
+        </div>
+        <div className="showcase__grid">
+          {SHOWCASE_IMAGES.map((image) => (
+            <figure key={image.name} className="showcase__figure">
+              <img
+                src={`/showcase/${image.name}-1280.jpg`}
+                srcSet={`/showcase/${image.name}-768.webp 768w, /showcase/${image.name}-1280.jpg 1280w`}
+                sizes="(min-width: 80rem) 24rem, (min-width: 60rem) 30vw, (min-width: 40rem) 50vw, 100vw"
+                alt={image.alt}
+                width={1280}
+                height={720}
+                loading="lazy"
+                decoding="async"
+                // A missing file leaves the plain dark frame instead of a broken-image icon.
+                onError={(event) => {
+                  event.currentTarget.hidden = true;
+                }}
+              />
+            </figure>
+          ))}
+          <p className="showcase__note">AI-generated illustrations</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // The steps a customer actually goes through on this site, in order.
 const QUOTE_STEPS = [
   {
@@ -196,6 +250,8 @@ export function HomePage() {
             </ul>
           ))}
       </section>
+
+      <MachineShowcase />
 
       {products.status === "success" && <MachinesAtWork products={products.data.products} />}
 
