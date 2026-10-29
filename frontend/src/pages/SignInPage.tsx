@@ -23,7 +23,8 @@ export function SignInPage() {
           <p className="sign-in__lead">For the sales team and administrators. Accounts are created by an administrator.</p>
         </div>
         <p className="sign-in__note">
-          Looking for our machines? <Link to="/machines">Browse the catalog</Link>
+          Customer? You don't need an account. <Link to="/machines">Browse the catalog</Link> or{" "}
+          <Link to="/my-inquiries">check on an enquiry</Link>.
         </p>
       </div>
       <div className="sign-in__form">

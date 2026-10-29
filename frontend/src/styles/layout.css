@@ -492,3 +492,14 @@
 .site-footer__bottom p {
   margin: 0;
 }
+
+/* Staff sign-in: a small link with its "employees only" note, set apart from the customer links. */
+.site-footer__staff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+}
+
+.site-footer__staff a {
+  font-weight: 700;
+}

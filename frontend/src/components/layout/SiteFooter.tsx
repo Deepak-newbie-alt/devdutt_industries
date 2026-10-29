@@ -141,6 +141,11 @@ export function SiteFooter() {
             © {new Date().getFullYear()} <CompanyName />
           </p>
           <p>Prices are per unit; taxes and final terms are confirmed in your quotation.</p>
+          {/* Kept out of "Explore" and labelled, so customers can tell it isn't for them. */}
+          <p className="site-footer__staff">
+            <Link to="/sign-in">Staff sign-in</Link>
+            <span>Employees only. Customers don't need an account.</span>
+          </p>
         </div>
       </div>
     </footer>
