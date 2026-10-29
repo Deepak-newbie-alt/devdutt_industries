@@ -63,7 +63,7 @@
 
 .enquiry-machine__name {
   margin-bottom: var(--space-2);
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-family: var(--font-serif);
   font-size: var(--text-xl);
   font-stretch: var(--stretch-display);
@@ -157,7 +157,7 @@
 .otp-step {
   margin-top: var(--space-5);
   padding: var(--space-5);
-  border-left: 3px solid var(--color-ink);
+  border-left: 3px solid var(--color-emphasis);
   border-radius: var(--radius);
   background: var(--color-surface-muted);
 }
@@ -363,7 +363,7 @@
 }
 
 .revision-item--current {
-  border-color: #e7c9cb;
+  border-color: var(--color-brand-border);
   border-left: 4px solid var(--color-brand);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);

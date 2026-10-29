@@ -97,7 +97,7 @@
   top: 0;
   z-index: 10;
   border-top: 3px solid var(--color-brand);
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--color-header-bg);
   box-shadow: 0 1px 0 var(--color-border), 0 6px 18px rgba(24, 25, 28, 0.04);
 }
 
@@ -126,13 +126,46 @@
   }
 }
 
+/* The wordmark has a white background, so on the dark header it sits on a small white plate. */
+:root[data-theme="dark"] .brand {
+  padding: var(--space-1) var(--space-2);
+  background: #ffffff;
+}
+
+.site-header__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Light/dark switch, in the site header and the workspace top bar. */
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-emphasis);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+}
+
 .site-header__menu-button {
   min-height: 2.75rem;
   padding: 0 var(--space-4);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);
   background: var(--color-surface);
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -180,7 +213,7 @@
 }
 
 .site-nav__link:hover {
-  color: var(--color-ink);
+  color: var(--color-emphasis);
 }
 
 .site-nav__link:hover::after {
@@ -189,7 +222,7 @@
 
 .site-nav__link--active,
 .site-nav__link--active:hover {
-  color: var(--color-ink);
+  color: var(--color-emphasis);
 }
 
 .site-nav__link--active::after,
@@ -204,7 +237,7 @@
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   line-height: 1.25;
   text-decoration: none;
   transition: border-color 150ms ease, background-color 150ms ease;
@@ -213,7 +246,7 @@
 .site-nav__phone:hover {
   border-color: var(--color-brand);
   background: var(--color-brand-tint);
-  color: var(--color-ink);
+  color: var(--color-emphasis);
 }
 
 .site-nav__phone-label {
@@ -235,7 +268,13 @@
   .site-nav {
     display: block;
     flex-basis: auto;
+    order: 1;
+    margin-left: auto;
     padding-bottom: 0;
+  }
+
+  .site-header__tools {
+    order: 2;
   }
 
   .site-nav__list {
@@ -457,7 +496,7 @@
 }
 
 .hero__panel :focus-visible {
-  outline-color: var(--color-ink);
+  outline-color: var(--color-emphasis);
 }
 
 .hero__panel-title {

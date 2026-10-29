@@ -4,6 +4,7 @@ import { listClosureRequests } from "../../api/closureRequests";
 import { EmployeeProvider, useEmployee } from "../../auth/EmployeeContext";
 import { useApiQuery } from "../../hooks/useApiQuery";
 import { Logo } from "../brand/Logo";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "workspace-nav__link workspace-nav__link--active" : "workspace-nav__link";
@@ -142,6 +143,7 @@ function WorkspaceTopbar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onTogg
       </p>
 
       <div className="workspace-user">
+        <ThemeToggle />
         <span className="workspace-user__avatar" aria-hidden="true">
           {employee.name.trim().charAt(0).toUpperCase()}
         </span>

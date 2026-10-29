@@ -6,6 +6,18 @@
     <meta name="description" content="Industrial tube and pipe machinery: product catalog and quotation requests." />
     <link rel="preload" href="/fonts/NotoSans-Variable-latin.woff2" as="font" type="font/woff2" crossorigin />
     <title>Devdutt Industries</title>
+    <script>
+      // Applies the saved theme (or the system one) before the first paint, so dark mode never flashes white.
+      // The key matches src/theme/theme.ts.
+      (function () {
+        var saved = null;
+        try {
+          saved = localStorage.getItem("devdutt-theme");
+        } catch (e) {}
+        var dark = saved === "dark" || (saved !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -91,9 +91,39 @@
   --color-info-bg: #eef4fd;
   --color-warning: #8a4b06;
   --color-warning-bg: #fdf3e2;
+  --color-danger-border: #f5c6c2;
+  --color-success-border: #bfe5cf;
+  --color-info-border: #cddcf3;
+
+  /* Emphasis: headings, strong labels and firm borders on page surfaces (charcoal in light mode).
+     Kept apart from ink, which stays dark for charcoal fields in both themes. */
+  --color-emphasis: #1b1c1f;
+  /* Primary actions and "done" markers: charcoal with white text, flipped in dark mode. */
+  --color-action: #1b1c1f;
+  --color-action-hover: #2e3035;
+  --color-on-action: #ffffff;
+
+  /* Smaller roles that used to be fixed colours. */
+  --color-placeholder: #8a8d93;
+  --color-border-hover: #d6d1c9;
+  --color-brand-border: #ecc9cb;
+  --color-brand-wash: #fdf6f6;
+  --color-badge-text: #3d4048;
+  --color-badge-muted: #555a62;
+  --color-teal: #0f625b;
+  --color-teal-bg: #e4f3f1;
+  --color-rose: #8c2a2f;
+  --color-rose-bg: #f9eeee;
+  --color-count-zero: #aaa59d;
+  --color-frame-from: #f3f0eb;
+  --color-frame-to: #e9e5df;
+  --color-header-bg: rgba(255, 255, 255, 0.97);
+  --color-focus-glow: rgba(27, 28, 31, 0.14);
 
   /* Focus: charcoal on light surfaces, white on dark ones; red would read as an error. */
-  --focus-ring: 2px solid var(--color-ink);
+  --focus-ring: 2px solid var(--color-emphasis);
+
+  color-scheme: light;
 
   /* Type */
   --font-sans: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -138,4 +168,62 @@
   --content-width: 80rem;
   --narrow-width: 46rem;
   --header-height: 5rem;
+}
+
+/* Dark theme: the same warm charcoal family as the hero and footer, with lighter text and the brand
+   red kept for actions. Only colours change; ink stays dark, so charcoal fields look the same. */
+:root[data-theme="dark"] {
+  --color-bg: #141518;
+  --color-surface: #1c1e22;
+  --color-surface-muted: #25272c;
+  --color-surface-hover: #22242a;
+  --color-border: #34373e;
+  --color-border-strong: #70747c;
+
+  --color-text: #ebe9e5;
+  --color-text-muted: #a8acb3;
+
+  /* Red text on dark panels is lifted so it stays readable; buttons keep the brand red. */
+  --color-brand-hover: #c8141f;
+  --color-brand-tint: #3a1c1f;
+  --color-brand-text: #ff7b81;
+
+  --color-danger: #ff8b80;
+  --color-danger-bg: #3b1d1b;
+  --color-success: #5dd39a;
+  --color-success-bg: #142c20;
+  --color-info: #8fb3ff;
+  --color-info-bg: #182540;
+  --color-warning: #f2b65e;
+  --color-warning-bg: #33260f;
+  --color-danger-border: #6e2c27;
+  --color-success-border: #2a5a40;
+  --color-info-border: #2f4775;
+
+  --color-emphasis: #f5f3ef;
+  --color-action: #f1efeb;
+  --color-action-hover: #ffffff;
+  --color-on-action: #121315;
+
+  --color-placeholder: #7e838b;
+  --color-border-hover: #4c5058;
+  --color-brand-border: #5e2a2f;
+  --color-brand-wash: #2a1a1c;
+  --color-badge-text: #d4d2cd;
+  --color-badge-muted: #b1b4ba;
+  --color-teal: #67d3c6;
+  --color-teal-bg: #11302c;
+  --color-rose: #f3a1a6;
+  --color-rose-bg: #3b1e22;
+  --color-count-zero: #6b6f77;
+  --color-frame-from: #23252a;
+  --color-frame-to: #1b1d21;
+  --color-header-bg: rgba(22, 23, 26, 0.96);
+  --color-focus-glow: rgba(255, 255, 255, 0.16);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-raised: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 36px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
 }

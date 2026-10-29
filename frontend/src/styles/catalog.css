@@ -72,7 +72,7 @@
 }
 
 .category-row__name {
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-weight: 700;
   line-height: 1.3;
 }
@@ -309,7 +309,7 @@
 
 /* No photo yet: a quiet branded panel set in type, with a red corner mark. Replaced by the photo later. */
 .image-frame--empty {
-  background: linear-gradient(135deg, #f3f0eb 0%, #e9e5df 100%);
+  background: linear-gradient(135deg, var(--color-frame-from) 0%, var(--color-frame-to) 100%);
 }
 
 .image-frame--empty::before {
@@ -333,7 +333,7 @@
 }
 
 .image-frame__label {
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-family: var(--font-serif);
   font-size: var(--text-xl);
   font-stretch: var(--stretch-display);
@@ -360,7 +360,7 @@
 }
 
 .product-card:hover {
-  border-color: #d6d1c9;
+  border-color: var(--color-border-hover);
   box-shadow: var(--shadow-raised);
   transform: translateY(-3px);
 }
@@ -398,7 +398,7 @@
 }
 
 .product-card__link {
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   text-decoration: none;
 }
 
@@ -431,7 +431,7 @@
 
 .product-card__price {
   margin: 0;
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-size: var(--text-xl);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -497,7 +497,7 @@
 
 .filters__heading {
   margin: 0;
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-stretch: 100%;
@@ -542,14 +542,14 @@
 
 .filters__category:hover {
   background: var(--color-surface-muted);
-  color: var(--color-ink);
+  color: var(--color-emphasis);
 }
 
 .filters__category[aria-current="true"],
 .filters__category[aria-current="true"]:hover {
-  border-color: var(--color-ink);
-  background: var(--color-ink);
-  color: var(--color-text-inverse);
+  border-color: var(--color-emphasis);
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 700;
 }
 
@@ -578,7 +578,7 @@
 
 .catalog__count {
   margin: 0;
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-weight: 700;
 }
 
@@ -664,7 +664,7 @@
 
 .product-detail__price {
   margin-bottom: var(--space-1);
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-family: var(--font-serif);
   font-size: clamp(2rem, 1.6rem + 1.4vw, 2.75rem);
   font-stretch: var(--stretch-display);
@@ -751,7 +751,7 @@
 }
 
 .spec-table td {
-  color: var(--color-ink);
+  color: var(--color-emphasis);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { useCompanyInfo } from "../../context/CompanyInfoContext";
 import { Logo } from "../brand/Logo";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "site-nav__link site-nav__link--active" : "site-nav__link";
@@ -42,15 +43,19 @@ export function SiteHeader() {
           <Logo />
         </Link>
 
-        <button
-          type="button"
-          className="site-header__menu-button"
-          aria-expanded={menuOpen}
-          aria-controls="site-nav"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          {menuOpen ? "Close" : "Menu"}
-        </button>
+        {/* After the nav on wide screens (see .site-header__tools), beside the menu button on phones. */}
+        <div className="site-header__tools">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="site-header__menu-button"
+            aria-expanded={menuOpen}
+            aria-controls="site-nav"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? "Close" : "Menu"}
+          </button>
+        </div>
 
         <nav id="site-nav" className={menuOpen ? "site-nav site-nav--open" : "site-nav"} aria-label="Main">
           <ul className="site-nav__list">

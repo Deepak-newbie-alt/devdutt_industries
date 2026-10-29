@@ -1,16 +1,24 @@
 import { SignIn } from "@clerk/react";
 import { Link } from "react-router";
 import { Logo } from "../components/brand/Logo";
+import { useTheme } from "../theme/theme";
 
-// Clerk's form in the site's colours and type (appearance only).
-const SIGN_IN_APPEARANCE = {
-  variables: { colorPrimary: "#1b1c1f", borderRadius: "4px", fontFamily: "inherit" },
-  elements: { footerAction: { display: "none" } },
+// Clerk's form in the site's colours and type (appearance only). Clerk follows the page's colour
+// scheme on its own, so only the primary button needs the theme's action colours.
+const PRIMARY = {
+  light: { colorPrimary: "#1b1c1f", colorPrimaryForeground: "#ffffff" },
+  dark: { colorPrimary: "#f1efeb", colorPrimaryForeground: "#121315" },
 };
 
 // Staff sign-in only. Accounts are created by an administrator, so the
 // "sign up" link in Clerk's footer is hidden; sign-up should also be disabled in Clerk.
 export function SignInPage() {
+  const theme = useTheme();
+  const appearance = {
+    variables: { ...PRIMARY[theme], borderRadius: "4px", fontFamily: "inherit" },
+    elements: { footerAction: { display: "none" } },
+  };
+
   return (
     <div className="sign-in">
       <title>Staff sign-in | Devdutt Industries</title>
@@ -28,7 +36,7 @@ export function SignInPage() {
         </p>
       </div>
       <div className="sign-in__form">
-        <SignIn routing="path" path="/sign-in" appearance={SIGN_IN_APPEARANCE} />
+        <SignIn routing="path" path="/sign-in" appearance={appearance} />
       </div>
     </div>
   );
